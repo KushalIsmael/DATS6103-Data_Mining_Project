@@ -1,2 +1,8 @@
 import pandas as pd
-data = pd.read_csv('nonvoters_data.csv')
+import os
+
+path = str(os.getcwd())
+print(path)
+data = pd.read_csv(path[:-4]+"nonvoters_data.csv")
+
+data.head(10)

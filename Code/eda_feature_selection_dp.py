@@ -133,7 +133,7 @@ df_mod = df[(df['q23_which_candidate_supporting'] == 1) | (df['q23_which_candida
 X = df_mod.drop(['q23_which_candidate_supporting', 'q30_partyidentification',
                  'q14_view_of_republicans', 'q15_view_of_democrats'], axis=1)
 y = df_mod['q23_which_candidate_supporting']
-X_train, y_train, X_test, y_test = train_test_split(X, y)
+X_train, X_test, y_train, y_test = train_test_split(X, y)
 
 # Fit the random forest
 # Get feature
@@ -146,3 +146,18 @@ rf2 = RandomForestClassifier()
 rf2.fit(X=X, y=y, sample_weight=None)
 feat_imp = list(zip(rf2.feature_importances_, X.columns))
 print(sorted(feat_imp, reverse=True))
+
+# Try feature selection with SelectFromModel
+select = SelectFromModel(RandomForestClassifier(n_estimators=20))
+select.fit(X_train, y_train)
+# Select.get_support returns True or False for each feature
+# Take only the true values for features and look at our accuracy
+print(select.get_support())
+feature_inclusion_array = select.get_support()
+print(X_train.columns[feature_inclusion_array])
+inclusion_cols = X_train.columns[feature_inclusion_array]
+X_train_skinny = X_train[inclusion_cols]
+
+rf3 = RandomForestClassifier()
+cv_skinny = cross_validate(rf3, X_train_skinny, y_train, cv=10)
+print(cv_skinny)

@@ -16,6 +16,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
+from sklearn.ensemble import GradientBoostingClassifier
 
 #------------------------------------------------------
 # Read in csv file
@@ -249,7 +250,7 @@ plt.show()
 # Dropped Questions 14 and 15; trained model
 
 X_Train_dropped_14_15 = X_train.drop(['q14_view_of_republicans',
-              'q15_view_of_democrats'], axis = 1)
+              'q15_view_of_democrats', ], axis = 1)
 clf_dropped_14_15 = RandomForestClassifier(n_estimators=100)
 clf_dropped_14_15.fit(X_Train_dropped_14_15, y_train)
 
@@ -266,7 +267,7 @@ y_pred_dropped_14_15 = clf_dropped_14_15.predict(X_Test_dropped_14_15)
 y_pred_score_dropped_14_15 = clf_dropped_14_15.predict_proba(X_Test_dropped_14_15)
 
 # %%-----------------------------------------------------------------------
-# calculate metrics gini model
+# calculate metrics for base model
 
 print("\n")
 print("Results Using All Features: \n")
@@ -280,7 +281,7 @@ print("\n")
 
 print("ROC_AUC : ", roc_auc_score(y_test,y_pred_score[:,1]) * 100)
 
-# calculate metrics entropy model
+# calculate metrics for new model
 print("\n")
 print("Results Without Q14 and Q15 features: \n")
 print("Classification Report: ")
@@ -291,7 +292,7 @@ print("\n")
 print("ROC_AUC : ", roc_auc_score(y_test,y_pred_score_dropped_14_15[:,1]) * 100)
 
 # %%-----------------------------------------------------------------------
-# confusion matrix for gini model
+# confusion matrix for base model
 conf_matrix = confusion_matrix(y_test, y_pred)
 class_names = nv_df_mod['q23_which_candidate_supporting'].unique()
 
@@ -312,7 +313,7 @@ plt.show()
 
 # %%-----------------------------------------------------------------------
 
-# confusion matrix for entropy model
+# Confusion matrix for new model
 
 conf_matrix = confusion_matrix(y_test, y_pred_dropped_14_15)
 class_names = nv_df_mod['q23_which_candidate_supporting'].unique()
@@ -331,3 +332,26 @@ plt.xlabel('Predicted label',fontsize=20)
 # Show heat map
 plt.tight_layout()
 plt.show()
+
+# %%-----------------------------------------------------------------------
+
+# Gradient Boosting Classifier
+
+gb_clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.05)
+gb_clf.fit(X_train, y_train)
+gb_pred = gb_clf.predict(X_test)
+gb_score = gb_clf.predict_proba(X_test)
+
+# Calculate metrics for boosting model
+
+print("\n")
+print("Results Using Gradient Boosting & All Features: \n")
+
+print("Classification Report: ")
+print(classification_report(y_test,gb_pred))
+print("\n")
+
+print("Accuracy : ", accuracy_score(y_test, gb_pred) * 100)
+print("\n")
+
+print("ROC_AUC : ", roc_auc_score(y_test,gb_score[:,1]) * 100)

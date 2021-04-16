@@ -11,6 +11,11 @@ from sklearn.model_selection import cross_validate
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import SelectFromModel
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+from sklearn.metrics import roc_auc_score
 
 #------------------------------------------------------
 # Read in csv file
@@ -69,12 +74,26 @@ nv_df.columns = ['RespId', 'weight',
               'ppage', 'educ', 'race', 'gender', 'income_cat', 'voter_category'
               ]
 
+nv_df.drop(['q1_uscitizen','q22_whynotvoting_2020',
+              'q28_whydidyouvote_past1','q28_whydidyouvote_past2','q28_whydidyouvote_past3','q28_whydidyouvote_past4',
+              'q28_whydidyouvote_past5','q28_whydidyouvote_past6','q28_whydidyouvote_past7','q28_whydidyouvote_past8',
+              'q29_whydidyounotvote_past1','q29_whydidyounotvote_past2','q29_whydidyounotvote_past3','q29_whydidyounotvote_past4','q29_whydidyounotvote_past5',
+              'q29_whydidyounotvote_past6','q29_whydidyounotvote_past7','q29_whydidyounotvote_past8','q29_whydidyounotvote_past9','q29_whydidyounotvote_past10',
+              'q31_republicantype',
+              'q32_democratictype',
+              'q33_closertowhichparty',
+         'RespId',
+         'weight'
+         ], axis=1, inplace=True)
+
+age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'elderly']
+age_bins= [20, 30, 40, 50, 60, 70, 200]
 nv_df['Age_Group'] = pd.cut(nv_df['ppage'], bins = age_bins, labels = age_labels_cut, right = False)
 
 
-#------------------------------------------------------
-# Race Pie Chart
-#------------------------------------------------------
+# %%-----------------------------------------------------------------------
+# Race Pie Chart & Histogram
+
 
 distinct_races = set(nv_df['race'])
 total_race = nv_df['race'].count()
@@ -91,9 +110,11 @@ ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 plt.title(label = 'Percentage of Non-Voters by Race')
 plt.show()
 
-#------------------------------------------------------
-# Gender Pie Chart
-#------------------------------------------------------
+sns.catplot(x='race', kind='count', palette = "ch:.25", data = nv_df)
+
+# %%-----------------------------------------------------------------------
+# Gender Pie Chart & Histogram
+
 
 distinct_genders = set(nv_df['gender'])
 total_gender = nv_df['gender'].count()
@@ -107,12 +128,12 @@ ax1.axis('equal')
 plt.title(label = 'Percentage of Non-Voters by Gender')
 plt.show()
 
-#------------------------------------------------------
-# Age Pie Chart
-#------------------------------------------------------
+sns.catplot(x='gender', kind='count', palette = "ch:.25", data = nv_df)
 
-age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'elderly']
-age_bins= [20, 30, 40, 50, 60, 70, 200]
+# %%-----------------------------------------------------------------------
+# Age Pie Chart & Histogram
+
+
 total_age = nv_df['Age_Group'].count()
 twenties = nv_df[nv_df['Age_Group'] == 'twenties']['Age_Group'].count()/total_age
 thirties = nv_df[nv_df['Age_Group'] == 'thirties']['Age_Group'].count()/total_age
@@ -128,9 +149,11 @@ ax1.axis('equal')
 plt.title(label = 'Percentage of Non-Voters by Age Group')
 plt.show()
 
-#------------------------------------------------------
-# Education-Level Pie Chart
-#------------------------------------------------------
+sns.catplot(x='Age_Group', kind='count', palette = "ch:.25", data = nv_df)
+
+# %%-----------------------------------------------------------------------
+# Education-Level Pie Chart & Histogram
+
 
 distinct_educ = set(nv_df['educ'])
 total_educ = nv_df['educ'].count()
@@ -146,9 +169,11 @@ ax1.axis('equal')
 plt.title(label = 'Percentage of Non-Voters by Education-Level')
 plt.show()
 
-#------------------------------------------------------
-# Income Category Pie Chart
-#------------------------------------------------------
+sns.catplot(x='educ', kind='count', palette = "ch:.25", data = nv_df)
+
+# %%-----------------------------------------------------------------------
+# Income Category Pie Chart & Histogram
+
 
 distinct_income = set(nv_df['income_cat'])
 total_income= nv_df['income_cat'].count()
@@ -166,6 +191,15 @@ ax1.axis('equal')
 plt.title(label = 'Percentage of Non-Voters by Education-Level')
 plt.show()
 
+sns.catplot(x='income_cat', kind='count', palette = "ch:.25", data = nv_df)
+
+#------------------------------------------------------
+# Race vs. Candidate
+#------------------------------------------------------
+
+race_gender_candidate = nv_df.pivot_table(index = 'race', columns = 'gender', values = 'q23_which_candidate_supporting')
+sns.heatmap(race_gender_candidate)
+plt.show()
 #------------------------------------------------------
 # Correlation Matrix
 #------------------------------------------------------
@@ -178,6 +212,9 @@ plt.show()
 # Modeling
 #------------------------------------------------------
 
+# %%-----------------------------------------------------------------------
+# Apply label encoder to features where necessary
+
 le = LabelEncoder()
 nv_df['educ'] = le.fit_transform(nv_df['educ'])
 nv_df['race'] = le.fit_transform(nv_df['race'])
@@ -186,17 +223,111 @@ nv_df['income_cat'] = le.fit_transform(nv_df['income_cat'])
 nv_df['voter_category'] = le.fit_transform(nv_df['voter_category'])
 nv_df['Age_Group'] = le.fit_transform(nv_df['Age_Group'])
 
+# %%-----------------------------------------------------------------------
+# Create train and test sets
+
 nv_df_mod = nv_df[(nv_df['q23_which_candidate_supporting'] == 1) | (nv_df['q23_which_candidate_supporting'] == 2)]
 X = nv_df_mod.drop('q23_which_candidate_supporting', axis=1)
 y = nv_df_mod['q23_which_candidate_supporting']
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 100)
 clf = RandomForestClassifier(n_estimators=100)
+clf.fit(X_train, y_train)
 sel = SelectFromModel(clf)
-sel.fit(X_train, y_train)
+
+# %%-----------------------------------------------------------------------
+# Feature Importance
+
 importances = clf.feature_importances_
-f_importances = pd.Series(importances, nv_df_mod.iloc[:, 1:].columns)
+f_importances = pd.Series(importances, nv_df_mod.iloc[:, :-1].columns)
 f_importances.sort_values(ascending=False, inplace=True)
 f_importances.plot(x='Features', y='Importance', kind='bar', figsize=(16, 9), rot=90, fontsize=15)
+plt.tight_layout()
+plt.show()
+
+# %%-----------------------------------------------------------------------
+# Dropped Questions 14 and 15; trained model
+
+X_Train_dropped_14_15 = X_train.drop(['q14_view_of_republicans',
+              'q15_view_of_democrats'], axis = 1)
+clf_dropped_14_15 = RandomForestClassifier(n_estimators=100)
+clf_dropped_14_15.fit(X_Train_dropped_14_15, y_train)
+
+X_Test_dropped_14_15 = X_test.drop(['q14_view_of_republicans',
+              'q15_view_of_democrats'], axis = 1)
+# print(X_Train_dropped_14_15.columns.get_loc('q23_which_candidate_supporting'))
+# %%-----------------------------------------------------------------------
+# Predictions
+
+y_pred = clf.predict(X_test)
+y_pred_score = clf.predict_proba(X_test)
+
+y_pred_dropped_14_15 = clf_dropped_14_15.predict(X_Test_dropped_14_15)
+y_pred_score_dropped_14_15 = clf_dropped_14_15.predict_proba(X_Test_dropped_14_15)
+
+# %%-----------------------------------------------------------------------
+# calculate metrics gini model
+
+print("\n")
+print("Results Using All Features: \n")
+
+print("Classification Report: ")
+print(classification_report(y_test,y_pred))
+print("\n")
+
+print("Accuracy : ", accuracy_score(y_test, y_pred) * 100)
+print("\n")
+
+print("ROC_AUC : ", roc_auc_score(y_test,y_pred_score[:,1]) * 100)
+
+# calculate metrics entropy model
+print("\n")
+print("Results Without Q14 and Q15 features: \n")
+print("Classification Report: ")
+print(classification_report(y_test,y_pred_dropped_14_15))
+print("\n")
+print("Accuracy : ", accuracy_score(y_test, y_pred_dropped_14_15) * 100)
+print("\n")
+print("ROC_AUC : ", roc_auc_score(y_test,y_pred_score_dropped_14_15[:,1]) * 100)
+
+# %%-----------------------------------------------------------------------
+# confusion matrix for gini model
+conf_matrix = confusion_matrix(y_test, y_pred)
+class_names = nv_df_mod['q23_which_candidate_supporting'].unique()
+
+
+df_cm = pd.DataFrame(conf_matrix, index=class_names, columns=class_names )
+
+plt.figure(figsize=(5,5))
+
+hm = sns.heatmap(df_cm, cbar=False, annot=True, square=True, fmt='d', annot_kws={'size': 20}, yticklabels=df_cm.columns, xticklabels=df_cm.columns)
+
+hm.yaxis.set_ticklabels(hm.yaxis.get_ticklabels(), rotation=0, ha='right', fontsize=20)
+hm.xaxis.set_ticklabels(hm.xaxis.get_ticklabels(), rotation=0, ha='right', fontsize=20)
+plt.ylabel('True label',fontsize=20)
+plt.xlabel('Predicted label',fontsize=20)
+# Show heat map
+plt.tight_layout()
+plt.show()
+
+# %%-----------------------------------------------------------------------
+
+# confusion matrix for entropy model
+
+conf_matrix = confusion_matrix(y_test, y_pred_dropped_14_15)
+class_names = nv_df_mod['q23_which_candidate_supporting'].unique()
+
+
+df_cm = pd.DataFrame(conf_matrix, index=class_names, columns=class_names )
+
+plt.figure(figsize=(5,5))
+
+hm = sns.heatmap(df_cm, cbar=False, annot=True, square=True, fmt='d', annot_kws={'size': 20}, yticklabels=df_cm.columns, xticklabels=df_cm.columns)
+
+hm.yaxis.set_ticklabels(hm.yaxis.get_ticklabels(), rotation=0, ha='right', fontsize=20)
+hm.xaxis.set_ticklabels(hm.xaxis.get_ticklabels(), rotation=0, ha='right', fontsize=20)
+plt.ylabel('True label',fontsize=20)
+plt.xlabel('Predicted label',fontsize=20)
+# Show heat map
 plt.tight_layout()
 plt.show()

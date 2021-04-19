@@ -25,7 +25,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 nv_df = pd.read_csv('nonvoters_data.csv')
 # print(nv_df.shape)
 # print(nv_df.columns)
-
+print(nv_df.shape)
 #------------------------------------------------------
 # Preprocessing
 #------------------------------------------------------
@@ -151,6 +151,7 @@ plt.title(label = 'Percentage of Non-Voters by Age Group')
 plt.show()
 
 sns.catplot(x='Age_Group', kind='count', palette = "ch:.25", data = nv_df)
+plt.title(label = 'Distribution by Age Group')
 
 # %%-----------------------------------------------------------------------
 # Education-Level Pie Chart & Histogram

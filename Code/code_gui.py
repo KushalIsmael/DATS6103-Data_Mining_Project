@@ -2,18 +2,63 @@ import pandas as pd
 from pathlib import Path
 import os
 import sys
-from PyQt5.QtWidgets import QMainWindow, QAction, QMenu, QApplication
+
+
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QPushButton, QAction, QComboBox, QLabel, \
+                            QGridLayout, QCheckBox, QGroupBox, QVBoxLayout, QHBoxLayout, QLineEdit, QPlainTextEdit
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import pyqtSignal
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Figure
+import matplotlib.pyplot as plt
 
 #get directory path
 dir = str(Path(os.getcwd()).parents[0])
 
-#read in data
-df = pd.read_csv(dir+'\\'+'nonvoters_data.csv', sep=',', header=0)
-print(df.head)
+
 
 #gui
-class Menu(QMainWindow):
+#todo create class for EDA
+class eda(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+#can use similar code to demo.py for Random Forest elements
+#todo create class for Random Forest
+    #todo create box for ROC
+    #todo create box for feature preference
+    #todo create box for correlation matrix
+    #todo create box for bar chart plot
+
+class BarChartPlot(QMainWindow):
+    #;:-----------------------------------------------------------------------
+    # This class creates a canvas to draw a stacked bar chart
+    # It presents option to choose demographic feature and question
+    # the methods for this class are:
+    #   _init_
+    #   initUi
+    #   update
+    #::-------------
+    #send_fig = pyqtSignal(str)
+
+    def __init__(self):
+        #::--------------------------------------------------------
+        # Crate a canvas with the layout to draw a bar chart
+        # The layout sets all the elements and manage the changes
+        # made on the canvas
+        #::--------------------------------------------------------
+
+        super(BarChartPlot, self).__init__()
+
+        self.Title = "Distribution of Responses by Demographic"
+        self.main_widget = QWidget(self)
+
+        self.setWindowTitle(self.Title)
+
+        self.fig = Figure()
+
+
+class App(QMainWindow):
 
     def __init__(self):
         super().__init__()
@@ -22,8 +67,8 @@ class Menu(QMainWindow):
         #::-----------------------
         self.left = 100
         self.top = 100
-        self.width = 500
-        self.height = 300
+        self.width = 1000
+        self.height = 800
 
         #:: Title for the application
 
@@ -39,7 +84,7 @@ class Menu(QMainWindow):
         #::-------------------------------------------------
         self.setWindowTitle(self.Title)
         self.setGeometry(self.left, self.top, self.width, self.height)
-        self.statusBar()
+
         #::-----------------------------
         # Menu bar items
         #::-----------------------------
@@ -50,14 +95,9 @@ class Menu(QMainWindow):
 
         #::--------------------------------------
         # Exit action
-        # The following code creates the the Exit Action along
-        # with all the characteristics associated with the action
-        # The Icon, a shortcut , the status tip that would appear in the window
-        # and the action
-        #  triggered.connect will indicate what is to be done when the item in
-        # the menu is selected
-        # These definitions are not available until the button is assigned
-        # to the menu
+        # Create exit option
+        # Exit keyboard shortcut
+        # Exit text tip
         #::--------------------------------------
 
         exitButton = QAction(QIcon('enter.png'), '&Exit', self)
@@ -65,13 +105,24 @@ class Menu(QMainWindow):
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)
 
-        #:: This line adds the button (item element ) to the menu
-
         fileMenu.addAction(exitButton)
 
-        #:: This line shows the windows
+        #::--------------------------------------
+        # EDA action
+        # Create exit option
+        # Exit keyboard shortcut
+        # Exit text tip
+        #::--------------------------------------
 
-        self.show()
+        distributionButton = QAction('Distribution Charts', self)
+        distributionButton.setStatusTip('Bar charts of demographics by question')
+        #distributionButton.triggered(self.distribution)
+        edaMenu.addAction(distributionButton)
+
+    def distribution(self):
+        dialog = BarChartPlot()
+        self.dialogs.append(dialog)
+        dialog.show()
 
 
 #::------------------------
@@ -79,9 +130,16 @@ class Menu(QMainWindow):
 #::------------------------
 def main():
     app = QApplication(sys.argv)  # creates the PyQt5 application
-    mn = Menu()  # Creates the menu
+    mn = App()  # Creates the menu
+    mn.show()
     sys.exit(app.exec_())  # Close the application
 
+#todo create def to read in data and assign global variables
+def voter_turnout():
+    # read in data
+    global demographics
+    df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
+    demographics = df['educ', 'race', 'gender', 'income']
 
 if __name__ == '__main__':
     main()

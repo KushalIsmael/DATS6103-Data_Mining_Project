@@ -114,7 +114,8 @@ df.drop(['q1_uscitizen','q22_whynotvoting_2020',
 # Step 1 - Replace -1 in certain columns with NaN
 # Step 2 - Replace NaN with demographic average using groupby
 
-# Rename columns to descriptive names
+# Create list of columns that need answer cleaning
+# This isn't all the columns (some columns only had values of -1 and 1, which is fine)
 replace_neg_one = [
               'q2_important_voting','q2_important_jury','q2_important_following','q2_important_displaying','q2_important_census',
               'q2_important_pledge','q2_important_military','q2_important_respect','q2_important_god','q2_important_protesting',
@@ -146,14 +147,14 @@ replace_neg_one = [
               'q30_partyidentification'
               ]
 
-
+# Step 1 - Replace -1 or -1.0 values with NaN
+# Values might be stored as int or float, so account for both
 df[replace_neg_one] = df[replace_neg_one].replace(-1, np.nan)
 df[replace_neg_one] = df[replace_neg_one].replace(-1.0, np.nan)
 
-# Replace NaN with categorical mean
+# Step 2 - Replace NaN with demographic mean
 for x in replace_neg_one:
     df[x] = df[x].fillna(df.groupby(by=['educ', 'race', 'gender', 'income_cat'])[x].transform('mean'))
-
 
 # Transform non-numeric categorical variables into numeric for model processing
 le = LabelEncoder()

@@ -9,6 +9,7 @@ FiveThirtyEight Non-Voters Dataset
 ##### Import packages and data #####
 
 import pandas as pd
+import numpy as np
 import os
 from pathlib import Path
 import seaborn as sns
@@ -25,7 +26,8 @@ df = pd.read_csv(dir+'\\'+'nonvoters_data.csv', sep=',', header=0)
 
 # Change directory for graphing purposes
 graphing_dir = os.path.join(dir, 'Graphs')
-os.mkdir(graphing_dir)
+if not os.path.exists(graphing_dir):
+    os.mkdir(graphing_dir)
 os.chdir(graphing_dir)
 
 ##### Exploratory data analysis ##### --------------------------------------------------------------------------
@@ -100,9 +102,58 @@ df.drop(['q1_uscitizen','q22_whynotvoting_2020',
               'q31_republicantype',
               'q32_democratictype',
               'q33_closertowhichparty',
+         'q21_plan_to_vote',
+         'q22_whynotvoting_2020',
          'RespId',
          'weight'
          ], axis=1, inplace=True)
+
+
+
+# Replace "refused" answers (value of -1) with the demographic average for each group
+# Step 1 - Replace -1 in certain columns with NaN
+# Step 2 - Replace NaN with demographic average using groupby
+
+# Rename columns to descriptive names
+replace_neg_one = [
+              'q2_important_voting','q2_important_jury','q2_important_following','q2_important_displaying','q2_important_census',
+              'q2_important_pledge','q2_important_military','q2_important_respect','q2_important_god','q2_important_protesting',
+              'q3_statement_racism1','q3_statement_racism2','q3_statement_feminine',
+              'q3_statement_msm','q3_statement_politiciansdontcare','q3_statement_besensitive',
+              'q4_impact_officialsfed','q4_impact_officialsstate','q4_impact_officialslocal',
+              'q4_impact_news','q4_impact_wallstreet','q4_impact_lawenforcement',
+              'q5_electionmatters',
+              'q6_officialsarelikeyou',
+              'q7_governmentdesign',
+              'q8_trust_presidency','q8_trust_congress','q8_trust_supremecourt','q8_trust_cdc','q8_trust_electedofficials',
+              'q8_trust_fbicia','q8_trust_newsmedia','q8_trust_police','q8_trust_postalservice',
+              'q9_politicalsystems_democracy','q9_politicalsystems_experts','q9_politicalsystems_strongleader','q9_politicalsystems_army',
+              'q10_disability','q10_chronic_illness','q10_unemployed','q10_evicted',
+              'q11_lostjob','q11_gotcovid','q11_familycovid',
+              'q11_coviddeath','q11_worriedmoney','q11_quitjob',
+              'q14_view_of_republicans',
+              'q15_view_of_democrats',
+              'q16_how_easy_vote',
+              'q17_secure_votingmachines','q17_secure_paperballotsinperson','q17_secure_paperballotsmail','q17_secure_electronicvotesonline',
+              'q18_votingsituations1','q18_votingsituations2','q18_votingsituations3','q18_votingsituations4','q18_votingsituations5',
+              'q18_votingsituations6','q18_votingsituations7','q18_votingsituations8','q18_votingsituations9','q18_votingsituations10',
+              'q20_currentlyregistered',
+              'q24_preferred_voting_method',
+              'q25_howcloselyfollowing_election',
+              'q26_which_voting_category',
+              'q27_didyouvotein18','q27_didyouvotein16','q27_didyouvotein14',
+              'q27_didyouvotein12','q27_didyouvotein10','q27_didyouvotein08',
+              'q30_partyidentification'
+              ]
+
+
+df[replace_neg_one] = df[replace_neg_one].replace(-1, np.nan)
+df[replace_neg_one] = df[replace_neg_one].replace(-1.0, np.nan)
+
+# Replace NaN with categorical mean
+for x in replace_neg_one:
+    df[x] = df[x].fillna(df.groupby(by=['educ', 'race', 'gender', 'income_cat'])[x].transform('mean'))
+
 
 # Transform non-numeric categorical variables into numeric for model processing
 le = LabelEncoder()
@@ -139,8 +190,9 @@ y_pred = clf.predict(X_test)
 y_pred_probs = clf.predict_proba(X_test)
 
 # Get accuracy and ROC values
-roc_auc_score(y_test, y_pred_probs[:, 1]) # 0.9954010422906433
-accuracy_score(y_test, y_pred) # 0.9726729291204099
+roc_auc_full = roc_auc_score(y_test, y_pred_probs[:, 1])
+accuracy_full = accuracy_score(y_test, y_pred)
+print(f'The full model AUC is {roc_auc_full} and the accuracy is {accuracy_full}.')
 
 # Plot ROC curve
 # More area under the curve indicates the model has skill in finding true positives and avoiding false positives
@@ -193,8 +245,9 @@ y_slim_pred = clf2.predict(X_slim_test)
 y_slim_pred_probs = clf2.predict_proba(X_slim_test)
 
 # Get accuracy and ROC values
-roc_auc_score(y_slim_test, y_slim_pred_probs[:, 1]) # 0.9839779380463819
-accuracy_score(y_slim_test, y_slim_pred) # 0.932536293766012
+roc_auc_slim = roc_auc_score(y_slim_test, y_slim_pred_probs[:, 1])
+accuracy_slim = accuracy_score(y_slim_test, y_slim_pred)
+print(f'The slim model AUC is {roc_auc_slim} and the accuracy is {accuracy_slim}.')
 
 # Plot ROC curve
 plot_roc_curve(clf2, X_slim_test, y_slim_test)
@@ -209,6 +262,7 @@ feat_imp2.plot(x='Features', y='Importance', kind='bar', figsize=(16, 9), rot=90
 plt.tight_layout()
 plt.savefig('feature_importances_slim_model.png', dpi=300, bbox_inches='tight')
 plt.show()
+
 
 ##### IGNORE CODE BELOW ##### --------------------------------------------------------------------------
 

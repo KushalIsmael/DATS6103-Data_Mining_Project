@@ -5,92 +5,90 @@ import os
 import sys
 
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QPushButton, QAction, QComboBox, QLabel, \
-                            QGridLayout, QCheckBox, QGroupBox, QVBoxLayout, QHBoxLayout, QLineEdit, QPlainTextEdit
+from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Figure
 import matplotlib.pyplot as plt
 
-
-
-
-#gui
-#todo create class for EDA
-class eda(QMainWindow):
+class Survey(QMainWindow):
     def __init__(self):
         super().__init__()
 
-#can use similar code to demo.py for Random Forest elements
-#todo create class for Random Forest
-    #todo create box for ROC
-    #todo create box for feature preference
-    #todo create box for correlation matrix
-    #todo create box for bar chart plot
-
-class BarChartPlot(QWidget):
-    #;:-----------------------------------------------------------------------
-    # This class creates a canvas to draw a stacked bar chart
-    # It presents option to choose demographic feature and question
-    # the methods for this class are:
-    #   _init_
-    #   initUi
-    #   update
-    #::-------------
-    #send_fig = pyqtSignal(str)
-
     def __init__(self):
-        #::--------------------------------------------------------
-        # Crate a canvas with the layout to draw a bar chart
-        # The layout sets all the elements and manage the changes
-        # made on the canvas
-        #::--------------------------------------------------------
+        super(Survey, self).__init__()
 
-        super(self).__init__()
-        #create widget title
-        self.Title = "Distribution of Responses by Demographic"
+        self.Title = "Survey Questions"
+        self.initUi()
+
+    def initUi(self):
+        self.setWindowTitle(self.Title)
         self.main_widget = QWidget(self)
 
+        self.layout = QVBoxLayout(self.main_widget) #set vertical layout
+
+        self.questions = QLabel('1 - Are you a US Citizen? 1.Yes/2.No'
+                                '\n2 - In your view, how important are each of the following to being a good American?'
+                                '\n -Voting in elections 1.Very Important/2.Somewhat Import/3.Not so important/4.Not at all important') #set text for questions widget
+
+        self.layout.addWidget(self.questions) #add widget to layout
+
+        self.setCentralWidget(self.main_widget)
+        self.resize(1000, 800)
+        self.show()
+
+#class Demographics(QMainWindow):
+
+#class Distribution(QMainWindow):
+
+class RandomForest(QMainWindow):
+
+
+    send_fig = pyqtSignal(str)
+
+    def __init__(self):
+        super(RandomForest, self).__init__()
+        self.Title = "Random Forest Model"
+
+        self.initUi()
+
+    def initUi(self):
         self.setWindowTitle(self.Title)
-        #create widget layout as vertical box
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        #add combo box 1
+        self.main_widget = QWidget(self)
 
-        #add combo box 2
+        self.layout = QVBoxLayout(self.main_widget)
+        self.SelectionBox = QHBoxLayout()  # sets horizontal layout for selection box
+        self.ModelBox1 = QHBoxLayout()  # sets horizontal layout for Results and Conf Matrix
+        self.Results = QVBoxLayout()  # set vertical layout for Results and Accuracy score
+        self.ModelBox2 = QHBoxLayout()  # sets horizontal layout for Feature Importance and ROC
 
-        #set plot size
-        self.canvas = Figure(plt.Figure(dpi=100, figsize=(800,800)))
-        layout.addWidget(self.canvas)
-        #add plot axes
-        self.insert_ax()
+        self.labelPercentTest = QLabel('Percent to test:')  # adds text before box
+        self.boxPercentTest = QSpinBox(self)  # creates box
+        self.boxPercentTest.setRange(1, 100)  # sets range limits
+        self.boxPercentTest.setValue(30)  # sets default value
 
-    def insert_ax(self):
-        self.ax = self.canvas.figure.subplots()
-        self.ax.set_ylim([0, 5836])
-        self.ax.set_xlim([0,5])
-        self.bar = None
+        self.labelFeature = QLabel('Top Features:')  # adds text before box
+        self.boxFeature = QSpinBox(self)  # creates box
+        self.boxFeature.setRange(1, 20)  # set range limits
+        self.boxFeature.setValue(20)  # sets default value
 
-    def update_chart(self):
-        labels = ['G1', 'G2', 'G3', 'G4', 'G5']
-        men_means = [20, 35, 30, 35, 27]
-        women_means = [25, 32, 34, 20, 25]
-        men_std = [2, 3, 4, 1, 2]
-        women_std = [3, 5, 2, 3, 3]
-        width = 0.35  # the width of the bars: can also be len(x) sequence
+        self.buttonRun = QPushButton("Run Model")
+        # self.buttonRun.clicked.connect(self.update) update function not yet set
 
-        fig, ax = plt.subplots()
+        self.SelectionBox.addWidget(self.labelPercentTest)
+        self.SelectionBox.addWidget(self.boxPercentTest)
+        self.SelectionBox.addWidget(self.labelFeature)
+        self.SelectionBox.addWidget(self.boxFeature)
+        self.SelectionBox.addWidget(self.buttonRun)
 
-        ax.bar(labels, men_means, width, yerr=men_std, label='Men')
-        ax.bar(labels, women_means, width, yerr=women_std, bottom=men_means,
-               label='Women')
+        self.layout.addLayout(self.SelectionBox)
+        self.layout.addLayout(self.ModelBox1)
+        self.layout.addLayout(self.ModelBox2)
 
-        ax.set_ylabel('Scores')
-        ax.set_title('Scores by group and gender')
-        ax.legend()
-
-        plt.show()
+        self.setCentralWidget(self.main_widget)
+        self.resize(1000, 800)
+        self.show()
 
 class App(QMainWindow):
 
@@ -106,15 +104,14 @@ class App(QMainWindow):
 
         #:: Title for the application
 
+        self.setWindowIcon(QIcon('vote.png')) #Icon made by Pixel perfect from www.flaticon.com
         self.Title = 'Voter Turnout Survey'
-
-        #:: The initUi is call to create all the necessary elements for the menu
 
         self.initUI()
 
     def initUI(self):
         #::-------------------------------------------------
-        # Creates the menu and the items
+        # Creates the menu and items
         #::-------------------------------------------------
         self.setWindowTitle(self.Title)
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -134,7 +131,7 @@ class App(QMainWindow):
         # Exit text tip
         #::--------------------------------------
 
-        exitButton = QAction(QIcon('enter.png'), '&Exit', self)
+        exitButton = QAction(QIcon('Icons//exit.png'), '&Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)
@@ -143,27 +140,49 @@ class App(QMainWindow):
 
         #::--------------------------------------
         # EDA action
-        # Create exit option
-        # Exit keyboard shortcut
-        # Exit text tip
+        # Create Survey, Demographics, Distributions options with icons
+        # Text tips for each option
         #::--------------------------------------
+        questionsButton = QAction(QIcon('question.png'),'Survey', self)
+        questionsButton.setStatusTip('Questions in survey')
+        questionsButton.triggered.connect(self.edaSurvey)
+        edaMenu.addAction(questionsButton)
 
-        distributionButton = QAction('Distribution Charts', self)
+        demographicsButton = QAction(QIcon('pie-chart.png'),'Demographics', self)
+        demographicsButton.setStatusTip('Graphs of demographics in survey')
+        edaMenu.addAction(demographicsButton)
+
+        distributionButton = QAction(QIcon('bar-chart.png'),'Distribution Charts', self)
         distributionButton.setStatusTip('Bar charts of demographics by question')
-        #distributionButton.triggered(self.distribution)
         edaMenu.addAction(distributionButton)
 
-        randomforestButton = QAction('Random Forest', self)
-        randomforestButton.setStatusTip('Random forest model')
+        #::--------------------------------------
+        # Model Action
+        # Create Random Forest option with icon
+        # Random forest text tip
+        #::--------------------------------------
+
+        randomforestButton = QAction(QIcon('forest.png'),'Random Forest', self)
+        randomforestButton.setStatusTip('Run a random forest model on the data')
+        randomforestButton.triggered.connect(self.modelRF)
         modelMenu.addAction(randomforestButton)
 
-    def distribution(self):
-        dialog = BarChartPlot()
+        self.dialogs = list()
+        self.setStatusBar(QStatusBar(self))
+
+    #::--------------------------------------
+    # Connect the button actions to classes
+    #::--------------------------------------
+
+    def edaSurvey(self):
+        dialog = Survey()
         self.dialogs.append(dialog)
         dialog.show()
 
-
-
+    def modelRF(self):
+        dialog = RandomForest()
+        self.dialogs.append(dialog)
+        dialog.show()
 
 #::------------------------
 #:: Application starts here
@@ -174,7 +193,6 @@ def main():
     mn.show()
     sys.exit(app.exec_())  # Close the application
 
-#todo create def to read in data and assign global variables
 def voter_turnout():
     # read in data and set global variables to be used in models and graphs
     global demographics
@@ -303,7 +321,6 @@ def voter_turnout():
     ]
 
     # Step 1 - Replace -1 or -1.0 values with NaN
-    # Values might be stored as int or float, so account for both
     nv_df[replace_neg_one] = nv_df[replace_neg_one].replace(-1, np.nan)
     nv_df[replace_neg_one] = nv_df[replace_neg_one].replace(-1.0, np.nan)
 
@@ -317,10 +334,11 @@ def voter_turnout():
     nv_df['Age_Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
 
     # Set demographics variable
-    demographics = nv_df['Age_Group', 'educ', 'race', 'gender', 'income_cat','voter_category']
+    demographics = nv_df[['Age_Group', 'educ', 'race', 'gender', 'income_cat','voter_category']]
 
 if __name__ == '__main__':
-    main()
+    voter_turnout() #read in data
+    main() #run app
 
 
 

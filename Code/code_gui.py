@@ -63,15 +63,15 @@ class RandomForest(QMainWindow):
         self.Results = QVBoxLayout()  # set vertical layout for Results and Accuracy score
         self.ModelBox2 = QHBoxLayout()  # sets horizontal layout for Feature Importance and ROC
 
-        self.labelPercentTest = QLabel('Percent to test:')  # adds text before box
-        self.boxPercentTest = QSpinBox(self)  # creates box
-        self.boxPercentTest.setRange(1, 100)  # sets range limits
-        self.boxPercentTest.setValue(30)  # sets default value
+        self.labelPercentTest = QLabel('Percent to test:')
+        self.boxPercentTest = QSpinBox(self)
+        self.boxPercentTest.setRange(1, 100)
+        self.boxPercentTest.setValue(30)
 
-        self.labelFeature = QLabel('Top Features:')  # adds text before box
-        self.boxFeature = QSpinBox(self)  # creates box
-        self.boxFeature.setRange(1, 20)  # set range limits
-        self.boxFeature.setValue(20)  # sets default value
+        self.labelFeature = QLabel('Top Features:')
+        self.boxFeature = QSpinBox(self)
+        self.boxFeature.setRange(1, 20)
+        self.boxFeature.setValue(20)
 
         self.buttonRun = QPushButton("Run Model")
         # self.buttonRun.clicked.connect(self.update) update function not yet set
@@ -81,6 +81,26 @@ class RandomForest(QMainWindow):
         self.SelectionBox.addWidget(self.labelFeature)
         self.SelectionBox.addWidget(self.boxFeature)
         self.SelectionBox.addWidget(self.buttonRun)
+
+
+        self.boxResults = QLabel('Results Output from Model')
+        self.boxAccuracy = QLabel('Accuracy Score')
+
+        self.Results.addWidget(self.boxResults)
+        self.Results.addWidget(self.boxAccuracy)
+
+        self.ModelBox1.addLayout(self.Results)
+
+        self.boxMatrix = QLabel('Confusion Matrix')
+        self.ModelBox1.addWidget(self.boxMatrix)
+
+
+        self.boxFeatImportance = QLabel('Feature Importance Graph')
+        self.boxROC = QLabel('ROC Curve')
+
+        self.ModelBox2.addWidget(self.boxFeatImportance)
+        self.ModelBox2.addWidget(self.boxROC)
+
 
         self.layout.addLayout(self.SelectionBox)
         self.layout.addLayout(self.ModelBox1)

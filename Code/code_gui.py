@@ -30,9 +30,10 @@ class Survey(QMainWindow):
 
         self.questions = QLabel('1 - Are you a US Citizen? 1.Yes/2.No'
                                 '\n2 - In your view, how important are each of the following to being a good American?'
-                                '\n -Voting in elections 1.Very Important/2.Somewhat Import/3.Not so important/4.Not at all important') #set text for questions widget
+                                '\n -Voting in elections 1.Very Important/2.Somewhat Import/3.Not so important/4.Not at all important')
+                                #set text for questions widget
 
-        self.layout.addWidget(self.questions) #add widget to layout
+        self.layout.addWidget(self.questions)
 
         self.setCentralWidget(self.main_widget)
         self.resize(1000, 800)

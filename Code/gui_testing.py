@@ -268,7 +268,6 @@ class App(QMainWindow):
         self.dialogs = list()
         self.setStatusBar(QStatusBar(self))
 
-
     def edaSurvey(self):
         dialog = Survey()
         self.dialogs.append(dialog)

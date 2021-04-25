@@ -84,9 +84,6 @@ class RandomForest(QMainWindow):
         self.resize(1000, 800)
         self.show()
 
-
-#gui
-#todo create class for EDA
 class Survey(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -169,9 +166,7 @@ class Demographics(QMainWindow):
         self.resize(1000, 800)
         self.show()
 
-
-
-class BarChartPlot(QWidget):
+class Distributions(QMainWindow):
     #;:-----------------------------------------------------------------------
     # This class creates a canvas to draw a stacked bar chart
     # It presents option to choose demographic feature and question
@@ -183,56 +178,44 @@ class BarChartPlot(QWidget):
     #send_fig = pyqtSignal(str)
 
     def __init__(self):
-        #::--------------------------------------------------------
-        # Crate a canvas with the layout to draw a bar chart
-        # The layout sets all the elements and manage the changes
-        # made on the canvas
-        #::--------------------------------------------------------
+        super().__init__()
 
-        super(self).__init__()
-        #create widget title
-        self.Title = "Distribution of Responses by Demographic"
+    def __init__(self):
+        super(Distributions, self).__init__()
+
+        self.Title = "Distribution of Demographic for Questions"
+        self.initUi()
+
+    def initUi(self):
+        self.setWindowTitle(self.Title)
         self.main_widget = QWidget(self)
 
-        self.setWindowTitle(self.Title)
-        #create widget layout as vertical box
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-        #add combo box 1
+        self.layout = QVBoxLayout(self.main_widget)
 
-        #add combo box 2
+        self.questionLabel = QLabel('Select a question')
+        self.questionDrop = QComboBox()
+        self.questionDrop.addItems(questions_list)
 
-        #set plot size
-        self.canvas = Figure(plt.Figure(dpi=100, figsize=(800,800)))
-        layout.addWidget(self.canvas)
-        #add plot axes
-        self.insert_ax()
+        self.demoLabel = QLabel('Select a demographic')
+        self.demoDrop = QComboBox()
+        self.demoDrop.addItems(demographics_list)
 
-    def insert_ax(self):
-        self.ax = self.canvas.figure.subplots()
-        self.ax.set_ylim([0, 5836])
-        self.ax.set_xlim([0,5])
-        self.bar = None
+        self.buttonPlot = QPushButton('Plot Distribution')
+        #self.buttonPlot.clicked.connect(self.update)
 
-    def update_chart(self):
-        labels = ['G1', 'G2', 'G3', 'G4', 'G5']
-        men_means = [20, 35, 30, 35, 27]
-        women_means = [25, 32, 34, 20, 25]
-        men_std = [2, 3, 4, 1, 2]
-        women_std = [3, 5, 2, 3, 3]
-        width = 0.35  # the width of the bars: can also be len(x) sequence
+        self.stackPlot = QLabel('Stacked bar chart of plot')
 
-        fig, ax = plt.subplots()
+        self.layout.addWidget(self.questionLabel)
+        self.layout.addWidget(self.questionDrop)
+        self.layout.addWidget(self.demoLabel)
+        self.layout.addWidget(self.demoDrop)
+        self.layout.addWidget(self.buttonPlot)
+        self.layout.addWidget(self.stackPlot)
 
-        ax.bar(labels, men_means, width, yerr=men_std, label='Men')
-        ax.bar(labels, women_means, width, yerr=women_std, bottom=men_means,
-               label='Women')
+        self.setCentralWidget(self.main_widget)
+        self.resize(1000, 800)
+        self.show()
 
-        ax.set_ylabel('Scores')
-        ax.set_title('Scores by group and gender')
-        ax.legend()
-
-        plt.show()
 
 #::------------------------
 #:: Main Window for application
@@ -304,6 +287,7 @@ class App(QMainWindow):
 
         distributionButton = QAction(QIcon('bar-chart.png'),'Distribution Charts', self)
         distributionButton.setStatusTip('Bar charts of demographics by question')
+        distributionButton.triggered.connect(self.edaDistributions)
         edaMenu.addAction(distributionButton)
 
         #::--------------------------------------
@@ -330,8 +314,8 @@ class App(QMainWindow):
         self.dialogs.append(dialog)
         dialog.show()
 
-    def distribution(self):
-        dialog = BarChartPlot()
+    def edaDistributions(self):
+        dialog = Distributions()
         self.dialogs.append(dialog)
         dialog.show()
 
@@ -339,9 +323,6 @@ class App(QMainWindow):
         dialog = RandomForest()
         self.dialogs.append(dialog)
         dialog.show()
-
-    #todo create defs to call corresponding class
-
 
 #::------------------------
 #:: Application starts here
@@ -355,7 +336,11 @@ def main():
 #todo create def to read in data and assign global variables
 def voter_turnout():
     # read in data and set global variables to be used in models and graphs
-    global demographics
+
+    global demographics_data
+    global demographics_list
+    global questions
+    global questions_list
 
     dir = str(Path(os.getcwd()).parents[0])
     nv_df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
@@ -415,7 +400,7 @@ def voter_turnout():
                   'q31_republicantype',
                   'q32_democratictype',
                   'q33_closertowhichparty',
-                  'age', 'educ', 'race', 'gender', 'income_cat', 'voter_category'
+                  'age', 'Education', 'Race', 'Gender', 'Income', 'voter_category'
                   ]
 
     # Drop irrelevant fields (US Citizen, responder ID, observation weight)
@@ -487,15 +472,20 @@ def voter_turnout():
 
     # Step 2 - Replace NaN with demographic mean
     for x in replace_neg_one:
-        nv_df[x] = nv_df[x].fillna(nv_df.groupby(by=['age', 'educ', 'race', 'gender', 'income_cat'])[x].transform('mean'))
+        nv_df[x] = nv_df[x].fillna(nv_df.groupby(by=['age', 'Education', 'Race', 'Gender', 'Income'])[x].transform('mean'))
 
     # Create age bins
     age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'elderly']
     age_bins = [20, 30, 40, 50, 60, 70, 200]
-    nv_df['Age_Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
+    nv_df['Age Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
 
     # Set demographics variable
-    demographics = nv_df[['Age_Group','educ', 'race', 'gender', 'income_cat', 'voter_category']]
+    demographics_data = nv_df[['Age Group','Education', 'Race', 'Gender', 'Income']]
+    demographics_list = list(demographics_data.columns)
+
+    # Set questions variable
+    questions = nv_df.iloc[:,0:87]
+    questions_list = list(questions.columns)
 
 if __name__ == '__main__':
     voter_turnout()

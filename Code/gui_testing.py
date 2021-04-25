@@ -5,7 +5,7 @@ import os
 import sys
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import pyqtSignal
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Figure
@@ -113,12 +113,63 @@ class Survey(QMainWindow):
         self.resize(1000, 800)
         self.show()
 
+class Demographics(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+    def __init__(self):
+        super(Demographics, self).__init__()
+
+        self.Title = "Demographics of Survey Respondents"
+        self.initUi()
+
+    def initUi(self):
+        self.setWindowTitle(self.Title)
+        self.main_widget = QWidget(self)
+
+        self.layout = QVBoxLayout(self.main_widget)
+        self.pieLayout = QHBoxLayout()
+        self.barLayout = QHBoxLayout()
+
+        self.pie1 = QLabel(self)
+        racePie = QPixmap('Plots//race_pie.png')
+        self.pie1.setPixmap(racePie)
+
+        self.pie2 = QLabel(self)
+        genderPie = QPixmap('Plots//gender_pie.png')
+        self.pie2.setPixmap(genderPie)
+
+        self.pie3 = QLabel(self)
+        eduPie = QPixmap('Plots//edu_pie.png')
+        self.pie3.setPixmap(eduPie)
+
+        #todo resize images to scale to window https://doc.qt.io/archives/qt-5.5/qt.html#AspectRatioMode-enum
+
+        self.pieLayout.addWidget(self.pie1)
+        self.pieLayout.addWidget(self.pie2)
+        self.pieLayout.addWidget(self.pie3)
+
+        self.bar1 = QLabel(self)
+        ageBar = QPixmap('Plots//age_bar.png')
+        self.bar1.setPixmap(ageBar)
+
+        self.bar2 = QLabel(self)
+        incomeBar = QPixmap('Plots//income_bar.png')
+        self.bar2.setPixmap(incomeBar)
+
+        # todo resize images to scale to window https://doc.qt.io/archives/qt-5.5/qt.html#AspectRatioMode-enum
+
+        self.barLayout.addWidget(self.bar1)
+        self.barLayout.addWidget(self.bar2)
+
+        self.layout.addLayout(self.pieLayout)
+        self.layout.addLayout(self.barLayout)
+
+        self.setCentralWidget(self.main_widget)
+        self.resize(1000, 800)
+        self.show()
 
 
-
-
-#todo create class for demographics
-#todo create class for Figure Canvas
 
 class BarChartPlot(QWidget):
     #;:-----------------------------------------------------------------------
@@ -248,6 +299,7 @@ class App(QMainWindow):
 
         demographicsButton = QAction(QIcon('pie-chart.png'),'Demographics', self)
         demographicsButton.setStatusTip('Graphs of demographics in survey')
+        demographicsButton.triggered.connect(self.edaDemographics)
         edaMenu.addAction(demographicsButton)
 
         distributionButton = QAction(QIcon('bar-chart.png'),'Distribution Charts', self)
@@ -270,6 +322,11 @@ class App(QMainWindow):
 
     def edaSurvey(self):
         dialog = Survey()
+        self.dialogs.append(dialog)
+        dialog.show()
+
+    def edaDemographics(self):
+        dialog = Demographics()
         self.dialogs.append(dialog)
         dialog.show()
 

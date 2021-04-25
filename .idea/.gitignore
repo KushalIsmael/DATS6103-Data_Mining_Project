@@ -6,3 +6,9 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
+#Testing files
+/Code/bar_chart.py
+/Code/bar_chart.ui
+/Code/Designer_Test.py
+/Code/Designer_Test.ui
+/Code/TestGUI.py

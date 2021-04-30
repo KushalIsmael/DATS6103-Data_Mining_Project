@@ -170,12 +170,34 @@ df['q23_which_candidate_supporting'] = le.fit_transform(df['q23_which_candidate_
 # Return model accuracy metrics, confusion matrix, feature importance, roc curve
 
 def rf_model_visualize(df: pd.DataFrame, num_features: int, test_percent: float):
+
+    '''
+
+    :param df: Dataframe of all observations (train and test) to build model.
+    :param num_features: The number of features to include in the model (all variables except target).
+    :param test_percent: Percent of data to use in test (i.e. 0.3 means 70% train, 30% test).
+
+    :return: accuracy_score_value: The accuracy of the RF model with the parameters passed above. (TP + FN)/ (TP + FP + TN + FN)
+    :return: conf: Confusion matrix of RF model. This classifies the true positives, false positives, true negatives, false negatives.
+    :return: auc_graph: Graph of AUC (area under curve) of the RF model.
+    :return: auc_score_value: AUC (area under curve) score. Random guessing is 0.5, and closer to 1 means smarter model.
+    :return: feature_importance_plot: Importance of the num_features chosen. Higher importance means it greater reduces entropy in classification.
+
+    '''
+
+    # Create empty variables to return if the user passes in invalid parameters
+    auc_null = np.nan
+    conf_null = np.zeros((2,2), dtype=int)
+    auc__null_graph = plt.plot()
+    auc_score_null = np.nan
+    feature_importance_plot_null = plt.plot()
+
     # There are only 92 features available
     if (num_features < 1) or (num_features > 92):
-        return ValueError # Need to change this later
+        return auc_null, conf_null, auc__null_graph, auc_score_null, feature_importance_plot_null
     # We cannot test on 0 or 100 percent of our data
     if (test_percent < 0.01) or (test_percent > 0.99):
-        return ValueError # Need to change this later
+        return auc_null, conf_null, auc__null_graph, auc_score_null, feature_importance_plot_null
 
     # Go through modeling steps in this function
     # Start with getting X, y, and train-test split
@@ -213,10 +235,10 @@ def rf_model_visualize(df: pd.DataFrame, num_features: int, test_percent: float)
     conf = confusion_matrix(y_test, y_pred)
 
     # Output: ROC Curve
-    roc_graph = plot_roc_curve(rf, X_test, y_test)
+    auc_graph = plot_roc_curve(rf, X_test, y_test)
 
     # Output: ROC score
-    roc_score_value = roc_auc_score(y_test, y_pred_proba[:, 1])
+    auc_score_value = roc_auc_score(y_test, y_pred_proba[:, 1])
 
     # Output Feature importance
     imp_final = rf.feature_importances_
@@ -224,10 +246,10 @@ def rf_model_visualize(df: pd.DataFrame, num_features: int, test_percent: float)
     feat_imp_final.sort_values(ascending=False, inplace=True)
     feature_importance_plot = plt.bar(x=feat_imp_final.index, height=feat_imp_final.values)
 
-    return accuracy_score_value, conf, roc_graph, roc_score_value, feature_importance_plot
+    return accuracy_score_value, conf, auc_graph, auc_score_value, feature_importance_plot
 
 
-accuracy_score_value, conf, roc_graph, roc_score_value, feature_importance_plot = rf_model_visualize(df=df,
+accuracy_score_value, conf, auc_graph, auc_score_value, feature_importance_plot = rf_model_visualize(df=df,
                                                                                                      num_features=25,
                                                                                                      test_percent=0.25)
 

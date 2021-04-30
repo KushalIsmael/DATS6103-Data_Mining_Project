@@ -202,13 +202,6 @@ sns.catplot(x='income_cat', kind='count', palette = "ch:.25", data = nv_df)
 race_gender_candidate = nv_df.pivot_table(index = 'race', columns = 'gender', values = 'q23_which_candidate_supporting')
 sns.heatmap(race_gender_candidate)
 plt.show()
-#------------------------------------------------------
-# Correlation Matrix
-#------------------------------------------------------
-
-# corrMatrix = nv_df.corr()
-# sns.heatmap(corrMatrix)
-# plt.show()
 
 #------------------------------------------------------
 # Modeling
@@ -245,6 +238,7 @@ f_importances = pd.Series(importances, nv_df_mod.iloc[:, :-1].columns)
 f_importances.sort_values(ascending=False, inplace=True)
 f_importances.plot(x='Features', y='Importance', kind='bar', figsize=(16, 9), rot=90, fontsize=15)
 plt.tight_layout()
+plt.title('Feature Importance')
 plt.show()
 
 # %%-----------------------------------------------------------------------

@@ -11,7 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-from pathlib import Path
 import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
@@ -20,15 +19,17 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import plot_roc_curve
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
-from sklearn.feature_selection import SelectFromModel
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.ensemble import GradientBoostingClassifier
 
+from pathlib import Path
 dir = str(Path(os.getcwd()).parents[0])
-df = pd.read_csv(dir+'\\'+'nonvoters_data.csv', sep=',', header=0)
-# df = pd.read_csv('nonvoters_data.csv')
+#df = pd.read_csv(dir+'\\'+'nonvoters_data.csv', sep=',', header=0)
+
+# If having issues loading in, then run this:
+df = pd.read_csv('nonvoters_data.csv')
 
 # Change directory for graphing purposes
 graphing_dir = os.path.join(dir, 'Graphs')
@@ -37,6 +38,7 @@ if not os.path.exists(graphing_dir):
 os.chdir(graphing_dir)
 
 ##### Exploratory data analysis ##### --------------------------------------------------------------------------
+
 
 print(df.head)
 initial_cols = df.columns
@@ -49,6 +51,7 @@ print(df['race'].value_counts())
 print(df['gender'].value_counts())
 print(df['income_cat'].value_counts())
 print(df['voter_category'].value_counts())
+
 
 #### Data Pre-Processing to prepare for modeling ##### --------------------------------------------------------------------------
 
@@ -115,7 +118,6 @@ df.drop(['q1_uscitizen','q22_whynotvoting_2020',
          ], axis=1, inplace=True)
 
 
-
 # Replace "refused" answers (value of -1) with the demographic average for each group
 # Step 1 - Replace -1 in certain columns with NaN
 # Step 2 - Replace NaN with demographic average using groupby
@@ -166,23 +168,11 @@ df[replace_neg_one] = df[replace_neg_one].replace(-1.0, np.nan)
 # Step 3 - Replace NaN with demographic mean
 for x in replace_neg_one:
     df[x] = df[x].fillna(df.groupby(by=['educ', 'race', 'gender', 'income_cat'])[x].transform('mean'))
-'''
-# Transform non-numeric categorical variables into numeric for model processing
-le = LabelEncoder()
-df['educ'] = le.fit_transform(df['educ'])
-df['race'] = le.fit_transform(df['race'])
-df['gender'] = le.fit_transform(df['gender'])
-df['income_cat'] = le.fit_transform(df['income_cat'])
-df['voter_category'] = le.fit_transform(df['voter_category'])
-df['Age_Group'] = le.fit_transform(df['Age_Group'])
-'''
+
 # Identify values of the target variable
 print(df['q23_which_candidate_supporting'].value_counts())
-'''
-# For q23_which_candidate_supporting, value of 1 is Trump and value of 2 is Biden
-# Drop unsure (value of 3) and refused to answer (value of -1) to set up our two-way classification
-df_mod = df[(df['q23_which_candidate_supporting'] == 1) | (df['q23_which_candidate_supporting'] == 2)]
-'''
+
+
 ##### EDA - Normality Checks ##### --------------------------------------------------------------------------
 
 # %%-----------------------------------------------------------------------
@@ -205,6 +195,10 @@ plt.title(label = 'Percentage of Non-Voters by Race')
 plt.show()
 
 sns.catplot(x='race', kind='count', palette = "ch:.25", data = df)
+plt.title(label = 'Distribution of Race')
+plt.tight_layout()
+plt.show()
+
 
 # %%-----------------------------------------------------------------------
 # Gender Pie Chart & Histogram
@@ -223,6 +217,10 @@ plt.title(label = 'Percentage of Non-Voters by Gender')
 plt.show()
 
 sns.catplot(x='gender', kind='count', palette = "ch:.25", data = df)
+plt.title(label = 'Distribution of Gender')
+plt.tight_layout()
+plt.show()
+
 
 # %%-----------------------------------------------------------------------
 # Age Pie Chart & Histogram
@@ -245,6 +243,9 @@ plt.show()
 
 sns.catplot(x='Age_Group', kind='count', palette = "ch:.25", data = df)
 plt.title(label = 'Distribution by Age Group')
+plt.tight_layout()
+plt.show()
+
 
 # %%-----------------------------------------------------------------------
 # Education-Level Pie Chart & Histogram
@@ -265,6 +266,10 @@ plt.title(label = 'Percentage of Non-Voters by Education-Level')
 plt.show()
 
 sns.catplot(x='educ', kind='count', palette = "ch:.25", data = df)
+plt.title(label = 'Distribution of Education-Level')
+plt.tight_layout()
+plt.show()
+
 
 # %%-----------------------------------------------------------------------
 # Income Category Pie Chart & Histogram
@@ -287,6 +292,10 @@ plt.title(label = 'Percentage of Non-Voters by Education-Level')
 plt.show()
 
 sns.catplot(x='income_cat', kind='count', palette = "ch:.25", data = df)
+plt.title(label = 'Distribution of Income Category')
+plt.tight_layout()
+plt.show()
+
 
 ##### Label Encoding ##### --------------------------------------------------------------------------
 
@@ -379,7 +388,8 @@ top20 = feat_imp.index[0:20]
 
 # Plot correlation matrix of top 20 features against the target variable (for all records)
 df20 = df[top20]
-df20['y'] = df[y.name]
+top20_names = df[y.name]
+df20.loc[:,'y'] = top20_names
 
 plt.figure(figsize=(16,16))
 plt.tight_layout()
@@ -481,3 +491,103 @@ print("Accuracy : ", accuracy_score(y_test, gb_pred) * 100)
 print("\n")
 
 print("ROC_AUC : ", roc_auc_score(y_test,gb_score[:,1]) * 100)
+print("\n")
+
+# %%-----------------------------------------------------------------------
+
+# Function for GUI
+
+def rf_model_visualize(df: pd.DataFrame, num_features: int, test_percent: float):
+
+    '''
+    :param df: Dataframe of all observations (train and test) to build model.
+    :param num_features: The number of features to include in the model (all variables except target).
+    :param test_percent: Percent of data to use in test (i.e. 0.3 means 70% train, 30% test).
+    :return: accuracy_score_value: The accuracy of the RF model with the parameters passed above. (TP + FN)/ (TP + FP + TN + FN)
+    :return: conf: Confusion matrix of RF model. This classifies the true positives, false positives, true negatives, false negatives.
+    :return: auc_graph: Graph of AUC (area under curve) of the RF model.
+    :return: auc_score_value: AUC (area under curve) score. Random guessing is 0.5, and closer to 1 means smarter model.
+    :return: feature_importance_plot: Importance of the num_features chosen. Higher importance means it greater reduces entropy in classification.
+    '''
+
+    # Create empty variables to return if the user passes in invalid parameters
+    auc_null = np.nan
+    conf_null = np.zeros((2,2), dtype=int)
+    auc__null_graph = plt.plot()
+    auc_score_null = np.nan
+    feature_importance_plot_null = plt.plot()
+
+    # There are only 92 features available
+    if (num_features < 1) or (num_features > 92):
+        return auc_null, conf_null, auc__null_graph, auc_score_null, feature_importance_plot_null
+    # We cannot test on 0 or 100 percent of our data
+    if (test_percent < 0.01) or (test_percent > 0.99):
+        return auc_null, conf_null, auc__null_graph, auc_score_null, feature_importance_plot_null
+
+    # Go through modeling steps in this function
+    # Start with getting X, y, and train-test split
+    Xpre = df.drop(columns=['q23_which_candidate_supporting'], axis=1)
+    ypre = df['q23_which_candidate_supporting']
+
+    X_pre_train, X_pre_test, y_pre_train, y_pre_test = train_test_split(Xpre, ypre, test_size=test_percent, random_state=1918)
+
+    # Fit the model
+    rf_pre = RandomForestClassifier()
+    rf_pre.fit(X_pre_train, y_pre_train)
+
+    # Get the most important features
+    importances = rf_pre.feature_importances_
+    feat_imp = pd.Series(importances, X_pre_train.columns)
+    feat_imp.sort_values(ascending=False, inplace=True)
+    features_to_keep = feat_imp.index[0:num_features]
+
+    # Re-fit with the slimmed down list
+    X = Xpre[features_to_keep]
+    y = ypre
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_percent, random_state=1918)
+
+    # Fit the model
+    rf = RandomForestClassifier()
+    rf.fit(X_train, y_train)
+    y_pred = rf.predict(X_test)
+    y_pred_proba = rf.predict_proba(X_test)
+
+    # Output: accuracy metrics
+    accuracy_score_value = accuracy_score(y_test, y_pred) * 100
+
+    # Output: confusion matrix
+    conf = confusion_matrix(y_test, y_pred)
+
+    # Output: ROC Curve
+    auc_graph = plot_roc_curve(rf, X_test, y_test)
+
+    # Output: ROC score
+    auc_score_value = roc_auc_score(y_test, y_pred_proba[:, 1])
+
+    # Output Feature importance
+    imp_final = rf.feature_importances_
+    feat_imp_final = pd.Series(imp_final, X_train.columns)
+    feat_imp_final.sort_values(ascending=False, inplace=True)
+    feature_importance_plot = plt.bar(x=feat_imp_final.index, height=feat_imp_final.values)
+
+    return accuracy_score_value, conf, auc_graph, auc_score_value, feature_importance_plot
+
+
+accuracy_score_value, conf, auc_graph, auc_score_value, feature_importance_plot = rf_model_visualize(df=df_mod,
+                                                                                                     num_features=25,
+                                                                                                     test_percent=0.25)
+
+print("Final function for output : ")
+print("\n")
+
+
+print("Accuracy : ", accuracy_score_value)
+print("\n")
+
+print("Confusion matrix : ")
+print(conf)
+print("\n")
+
+print("AUC : ", auc_score_value)
+print("\n")

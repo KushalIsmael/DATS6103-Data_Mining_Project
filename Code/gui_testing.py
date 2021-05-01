@@ -3,19 +3,107 @@ import numpy as np
 from pathlib import Path
 import os
 import sys
+import seaborn as sns
+
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import pyqtSignal
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 '''
 "Icon made by Freepik from www.flaticon.com"
 "Icon made by Pixel perfect from www.flaticon.com"
-
 '''
+
+class Canvas(FigureCanvas):
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+
+        FigureCanvas.setSizePolicy(self,
+                                   QSizePolicy.Expanding,
+                                   QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+class MyStaticMplCanvas(QDialog):
+    def __init__(self):
+        super(MyStaticMplCanvas, self).__init__()
+        self.Title = "Test"
+
+        # a figure instance to plot on
+        self.figure = Figure()
+        self.ax1 = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self.figure)
+
+        self.ax1.pie(race_percentages, labels=race_labels, autopct='%1.1f%%', startangle=90)
+        self.ax1.axis('equal')
+
+        self.figure.tight_layout()
+        self.figure.canvas.draw_idle()
+
+        self.figure2 = Figure()
+        self.ax2 = self.figure2.add_subplot(111)
+        self.canvas2 = FigureCanvas(self.figure2)
+
+        self.ax2.pie(gender_percentages, labels=gender_labels, autopct='%1.1f%%', startangle=90)
+        self.ax2.axis('equal')
+
+        self.figure2.tight_layout()
+        self.figure2.canvas.draw_idle()
+
+        self.figure3 = Figure()
+        self.ax3 = self.figure3.add_subplot(111)
+        self.canvas3 = FigureCanvas(self.figure3)
+
+        self.ax3.pie(educ_percentages, labels=educ_labels, autopct='%1.1f%%', startangle=90)
+        self.ax3.axis('equal')
+
+        self.figure3.tight_layout()
+        self.figure3.canvas.draw_idle()
+
+        self.figure4 = Figure()
+        self.ax4 = self.figure4.add_subplot(111)
+        self.canvas4 = FigureCanvas(self.figure4)
+
+        self.ax4.bar(income_labels, income_percentages, color=['tab:blue','tab:orange','tab:green','tab:red'])
+
+        self.figure4.tight_layout()
+        self.figure4.canvas.draw_idle()
+
+        self.figure5 = Figure()
+        self.ax5 = self.figure5.add_subplot(111)
+        self.canvas5 = FigureCanvas(self.figure5)
+
+        self.ax5.bar(age_labels, age_percentages, color=['tab:blue','tab:orange','tab:green','tab:red','tab:purple','tab:brown'])
+
+        self.figure5.tight_layout()
+        self.figure5.canvas.draw_idle()
+
+
+        layout = QVBoxLayout()
+        layout2 = QHBoxLayout()
+        layout3 = QHBoxLayout()
+
+        # adding canvas to the layout
+        layout2.addWidget(self.canvas)
+        layout2.addWidget(self.canvas2)
+        layout2.addWidget(self.canvas3)
+        layout.addLayout(layout2)
+
+        layout3.addWidget(self.canvas4)
+        layout3.addWidget(self.canvas5)
+        layout.addLayout(layout3)
+
+        # setting layout to the main window
+        self.setLayout(layout)
+
+
 class RandomForest(QMainWindow):
 
 
@@ -65,12 +153,26 @@ class RandomForest(QMainWindow):
 
         self.ModelBox1.addLayout(self.Results)
 
-        self.boxMatrix = QLabel('Confusion Matrix')
+        self.boxMatrix = QGroupBox('Confusion Matrix')
+        self.fig = Figure()
+        self.ax1 = self.fig.add_subplot(111)
+        self.axes = [self.ax1]
+        self.canvas = FigureCanvas(self.fig)
+
+        #self.boxMatrix.addWidget(self.canvas)
         self.ModelBox1.addWidget(self.boxMatrix)
 
 
-        self.boxFeatImportance = QLabel('Feature Importance Graph')
-        self.boxROC = QLabel('ROC Curve')
+        self.boxFeatImportance = QGroupBox('Feature Importance Graph')
+
+        self.fig2 = Figure()
+        self.ax2 = self.fig2.add_subplot(111)
+        self.axes2 = [self.ax2]
+        self.canvas2 = FigureCanvas(self.fig2)
+
+        self.boxROC = QGroupBox('ROC Curve')
+        self.boxROCLayout = QVBoxLayout()
+        self.boxROC.setLayout(self.boxROCLayout)
 
         self.ModelBox2.addWidget(self.boxFeatImportance)
         self.ModelBox2.addWidget(self.boxROC)
@@ -124,13 +226,20 @@ class Demographics(QMainWindow):
         self.setWindowTitle(self.Title)
         self.main_widget = QWidget(self)
 
+        #set main layouts
         self.layout = QVBoxLayout(self.main_widget)
         self.pieLayout = QHBoxLayout()
         self.barLayout = QHBoxLayout()
 
-        self.pie1 = QLabel(self)
-        racePie = QPixmap('Plots//race_pie.png')
-        self.pie1.setPixmap(racePie)
+        #draw pie chart of races
+        self.racepie = Figure()
+        data = [0,4,5]
+        self.ax1 = self.pie1.add_subplot(111)
+        self.axes1 = [self.ax1]
+        self.pie1 = FigureCanvas(self.racepie)
+
+        self.pie1.draw()
+
 
         self.pie2 = QLabel(self)
         genderPie = QPixmap('Plots//gender_pie.png')
@@ -142,7 +251,7 @@ class Demographics(QMainWindow):
 
         #todo resize images to scale to window https://doc.qt.io/archives/qt-5.5/qt.html#AspectRatioMode-enum
 
-        self.pieLayout.addWidget(self.pie1)
+        self.pieLayout.addWidget(self.racepie)
         self.pieLayout.addWidget(self.pie2)
         self.pieLayout.addWidget(self.pie3)
 
@@ -254,6 +363,7 @@ class App(QMainWindow):
         fileMenu = mainMenu.addMenu('File')
         edaMenu = mainMenu.addMenu('EDA')
         modelMenu = mainMenu.addMenu('Model')
+        testMenu = mainMenu.addMenu('Test')
 
         #::--------------------------------------
         # Exit action
@@ -300,6 +410,10 @@ class App(QMainWindow):
         randomforestButton.setStatusTip('Run a random forest model on the data')
         randomforestButton.triggered.connect(self.modelRF)
         modelMenu.addAction(randomforestButton)
+        
+        testButton = QAction('test',self)
+        testButton.triggered.connect(self.test)
+        testMenu.addAction(testButton)
 
         self.dialogs = list()
         self.setStatusBar(QStatusBar(self))
@@ -324,6 +438,11 @@ class App(QMainWindow):
         self.dialogs.append(dialog)
         dialog.show()
 
+    def test(self):
+        dialog = MyStaticMplCanvas()
+        self.dialogs.append(dialog)
+        dialog.show()
+
 #::------------------------
 #:: Application starts here
 #::------------------------
@@ -333,7 +452,6 @@ def main():
     mn.show()
     sys.exit(app.exec_())  # Close the application
 
-#todo create def to read in data and assign global variables
 def voter_turnout():
     # read in data and set global variables to be used in models and graphs
 
@@ -341,6 +459,16 @@ def voter_turnout():
     global demographics_list
     global questions
     global questions_list
+    global race_percentages
+    global race_labels
+    global educ_labels
+    global educ_percentages
+    global gender_labels
+    global gender_percentages
+    global income_labels
+    global income_percentages
+    global age_labels
+    global age_percentages
 
     dir = str(Path(os.getcwd()).parents[0])
     nv_df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
@@ -475,9 +603,55 @@ def voter_turnout():
         nv_df[x] = nv_df[x].fillna(nv_df.groupby(by=['age', 'Education', 'Race', 'Gender', 'Income'])[x].transform('mean'))
 
     # Create age bins
-    age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'elderly']
+    age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'seventies +']
     age_bins = [20, 30, 40, 50, 60, 70, 200]
     nv_df['Age Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
+
+    total_age = nv_df['Age Group'].count()
+    twenties = nv_df[nv_df['Age Group'] == 'twenties']['Age Group'].count() / total_age
+    thirties = nv_df[nv_df['Age Group'] == 'thirties']['Age Group'].count() / total_age
+    forties = nv_df[nv_df['Age Group'] == 'forties']['Age Group'].count() / total_age
+    fifties = nv_df[nv_df['Age Group'] == 'fifties']['Age Group'].count() / total_age
+    sixties = nv_df[nv_df['Age Group'] == 'sixties']['Age Group'].count() / total_age
+    elderly = nv_df[nv_df['Age Group'] == 'seventies +']['Age Group'].count() / total_age
+    age_percentages = [twenties, thirties, forties, fifties, sixties, elderly]
+    age_labels = ['Twenties', 'Thirties', 'Forties', 'Fifties', 'Sixties', 'Seventies +']
+
+
+
+    distinct_races = set(nv_df['Race'])
+    total_race = nv_df['Race'].count()
+    hispanic_percentage = nv_df[nv_df['Race'] == 'Hispanic']['Race'].count() / total_race
+    other_mixed_percentage = nv_df[nv_df['Race'] == 'Other/Mixed']['Race'].count() / total_race
+    white_percentage = nv_df[nv_df['Race'] == 'White']['Race'].count() / total_race
+    black_percentage = nv_df[nv_df['Race'] == 'Black']['Race'].count() / total_race
+    race_percentages = [white_percentage, black_percentage, hispanic_percentage, other_mixed_percentage]
+    race_labels = ['White', 'Black', 'Hispanic', 'Other/Mixed']
+
+    distinct_genders = set(nv_df['Gender'])
+    total_gender = nv_df['Gender'].count()
+    male_percentage = nv_df[nv_df['Gender'] == 'Male']['Gender'].count() / total_gender
+    female_percentage = nv_df[nv_df['Gender'] == 'Female']['Gender'].count() / total_gender
+    gender_percentages = [male_percentage, female_percentage]
+    gender_labels = ['Male', 'Female']
+
+    distinct_educ = set(nv_df['Education'])
+    total_educ = nv_df['Education'].count()
+    hs_percentage = nv_df[nv_df['Education'] == 'High school or less']['Education'].count() / total_educ
+    some_college_percentage = nv_df[nv_df['Education'] == 'Some college']['Education'].count() / total_educ
+    college_percentage = nv_df[nv_df['Education'] == 'College']['Education'].count() / total_educ
+    educ_percentages = [hs_percentage, some_college_percentage, college_percentage]
+    educ_labels = ['High School or Less', 'Some College', 'College']
+
+    distinct_income = set(nv_df['Income'])
+    total_income = nv_df['Income'].count()
+
+    income1_percentage = nv_df[nv_df['Income'] == 'Less than $40k']['Income'].count() / total_income
+    income2_percentage = nv_df[nv_df['Income'] == '$40-75k']['Income'].count() / total_income
+    income3_percentage = nv_df[nv_df['Income'] == '$75-125k']['Income'].count() / total_income
+    income4_percentage = nv_df[nv_df['Income'] == '$125k or more']['Income'].count() / total_income
+    income_percentages = [income1_percentage, income2_percentage, income3_percentage, income4_percentage]
+    income_labels = ['Less than $40k', '$40-75k', '$75-125k', '$125k or more']
 
     # Set demographics variable
     demographics_data = nv_df[['Age Group','Education', 'Race', 'Gender', 'Income']]
@@ -490,6 +664,3 @@ def voter_turnout():
 if __name__ == '__main__':
     voter_turnout()
     main()
-
-
-

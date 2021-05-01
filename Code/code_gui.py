@@ -9,10 +9,18 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 class Survey(QMainWindow):
+
+    #;:------------------------------------------------------
+    # This class displays the list of questions in the survey
+    #   _init_
+    #   initUi
+    #::------------------------------------------------------
+
     def __init__(self):
         super().__init__()
 
@@ -39,13 +47,164 @@ class Survey(QMainWindow):
         self.resize(1000, 800)
         self.show()
 
-#class Demographics(QMainWindow):
+class Canvas(FigureCanvas):
 
-#class Distribution(QMainWindow):
+    #;:--------------------------------------------------------
+    # This class creates a standard canvas size to draw charts
+    #::--------------------------------------------------------
+    def __init__(self, parent=None, width=5, height=4, dpi=100):
+        fig = Figure(figsize=(width, height), dpi=dpi)
+
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+
+        FigureCanvas.setSizePolicy(self,
+                                   QSizePolicy.Expanding,
+                                   QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+class Demographics(QDialog):
+
+    #;:---------------------------------------------------------
+    # This class creates draws pie charts and bar charts to show
+    # the distribution of the demographics of survey respondents
+    #::---------------------------------------------------------
+
+    def __init__(self):
+        super(Demographics, self).__init__()
+        self.Title = "Demographics of Survey Respondents"
+
+        # Race pie
+        self.figure = Figure()
+        self.ax1 = self.figure.add_subplot(111)
+        self.canvas = FigureCanvas(self.figure)
+
+        self.ax1.pie(race_percentages, labels=race_labels, autopct='%1.1f%%', startangle=90)
+        self.ax1.axis('equal')
+
+        self.figure.tight_layout()
+        self.figure.canvas.draw_idle()
+
+        #Gender pie
+        self.figure2 = Figure()
+        self.ax2 = self.figure2.add_subplot(111)
+        self.canvas2 = FigureCanvas(self.figure2)
+
+        self.ax2.pie(gender_percentages, labels=gender_labels, autopct='%1.1f%%', startangle=90)
+        self.ax2.axis('equal')
+
+        self.figure2.tight_layout()
+        self.figure2.canvas.draw_idle()
+
+        #Education pie
+        self.figure3 = Figure()
+        self.ax3 = self.figure3.add_subplot(111)
+        self.canvas3 = FigureCanvas(self.figure3)
+
+        self.ax3.pie(educ_percentages, labels=educ_labels, autopct='%1.1f%%', startangle=90)
+        self.ax3.axis('equal')
+
+        self.figure3.tight_layout()
+        self.figure3.canvas.draw_idle()
+
+        #Income bar chart
+        self.figure4 = Figure()
+        self.ax4 = self.figure4.add_subplot(111)
+        self.canvas4 = FigureCanvas(self.figure4)
+
+        self.ax4.bar(income_labels, income_percentages, color=['tab:blue','tab:orange','tab:green','tab:red'])
+
+        self.figure4.tight_layout()
+        self.figure4.canvas.draw_idle()
+
+        #Age bar chart
+        self.figure5 = Figure()
+        self.ax5 = self.figure5.add_subplot(111)
+        self.canvas5 = FigureCanvas(self.figure5)
+
+        self.ax5.bar(age_labels, age_percentages, color=['tab:blue','tab:orange','tab:green','tab:red','tab:purple','tab:brown'])
+
+        self.figure5.tight_layout()
+        self.figure5.canvas.draw_idle()
+
+
+        layout = QVBoxLayout()
+        layout2 = QHBoxLayout()
+        layout3 = QHBoxLayout()
+
+        # adding canvas to the layout
+        layout2.addWidget(self.canvas)
+        layout2.addWidget(self.canvas2)
+        layout2.addWidget(self.canvas3)
+        layout.addLayout(layout2)
+
+        layout3.addWidget(self.canvas4)
+        layout3.addWidget(self.canvas5)
+        layout.addLayout(layout3)
+
+        # setting layout to the main window
+        self.setLayout(layout)
+
+class Distributions(QMainWindow):
+    #;:-------------------------------------------------------------
+    # This class creates a canvas to draw a stacked bar chart
+    # It presents option to choose demographic feature and question
+    # the methods for this class are:
+    #   _init_
+    #   initUi
+    #   update
+    #::-------------------------------------------------------------
+    #send_fig = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+
+    def __init__(self):
+        super(Distributions, self).__init__()
+
+        self.Title = "Distribution of Demographic for Questions"
+        self.initUi()
+
+    def initUi(self):
+        self.setWindowTitle(self.Title)
+        self.main_widget = QWidget(self)
+
+        self.layout = QVBoxLayout(self.main_widget)
+
+        self.questionLabel = QLabel('Select a question')
+        self.questionDrop = QComboBox()
+        self.questionDrop.addItems(questions_list)
+
+        self.demoLabel = QLabel('Select a demographic')
+        self.demoDrop = QComboBox()
+        self.demoDrop.addItems(demographics_list)
+
+        self.buttonPlot = QPushButton('Plot Distribution')
+        #self.buttonPlot.clicked.connect(self.update)
+
+        self.stackPlot = QLabel('Stacked bar chart of plot')
+
+        self.layout.addWidget(self.questionLabel)
+        self.layout.addWidget(self.questionDrop)
+        self.layout.addWidget(self.demoLabel)
+        self.layout.addWidget(self.demoDrop)
+        self.layout.addWidget(self.buttonPlot)
+        self.layout.addWidget(self.stackPlot)
+
+        self.setCentralWidget(self.main_widget)
+        self.resize(1000, 800)
+        self.show()
 
 class RandomForest(QMainWindow):
 
-
+    #;:-------------------------------------------------
+    # This class runs the random forest model based on
+    # testing percentage and features.
+    # the methods for this class are:
+    #   _init_
+    #   initUi
+    #   update
+    #::--------------------------------------------------
     send_fig = pyqtSignal(str)
 
     def __init__(self):
@@ -171,10 +330,12 @@ class App(QMainWindow):
 
         demographicsButton = QAction(QIcon('pie-chart.png'),'Demographics', self)
         demographicsButton.setStatusTip('Graphs of demographics in survey')
+        demographicsButton.triggered.connect(self.edaDemographics)
         edaMenu.addAction(demographicsButton)
 
         distributionButton = QAction(QIcon('bar-chart.png'),'Distribution Charts', self)
         distributionButton.setStatusTip('Bar charts of demographics by question')
+        distributionButton.triggered.connect(self.edaDistributions)
         edaMenu.addAction(distributionButton)
 
         #::--------------------------------------
@@ -200,6 +361,16 @@ class App(QMainWindow):
         self.dialogs.append(dialog)
         dialog.show()
 
+    def edaDemographics(self):
+        dialog = Demographics()
+        self.dialogs.append(dialog)
+        dialog.show()
+
+    def edaDistributions(self):
+        dialog = Distributions()
+        self.dialogs.append(dialog)
+        dialog.show()
+
     def modelRF(self):
         dialog = RandomForest()
         self.dialogs.append(dialog)
@@ -216,7 +387,21 @@ def main():
 
 def voter_turnout():
     # read in data and set global variables to be used in models and graphs
-    global demographics
+
+    global demographics_data
+    global demographics_list
+    global questions
+    global questions_list
+    global race_percentages
+    global race_labels
+    global educ_labels
+    global educ_percentages
+    global gender_labels
+    global gender_percentages
+    global income_labels
+    global income_percentages
+    global age_labels
+    global age_percentages
 
     dir = str(Path(os.getcwd()).parents[0])
     nv_df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
@@ -276,7 +461,7 @@ def voter_turnout():
                   'q31_republicantype',
                   'q32_democratictype',
                   'q33_closertowhichparty',
-                  'age', 'educ', 'race', 'gender', 'income_cat', 'voter_category'
+                  'age', 'Education', 'Race', 'Gender', 'Income', 'voter_category'
                   ]
 
     # Drop irrelevant fields (US Citizen, responder ID, observation weight)
@@ -342,24 +527,76 @@ def voter_turnout():
     ]
 
     # Step 1 - Replace -1 or -1.0 values with NaN
+    # Values might be stored as int or float, so account for both
     nv_df[replace_neg_one] = nv_df[replace_neg_one].replace(-1, np.nan)
     nv_df[replace_neg_one] = nv_df[replace_neg_one].replace(-1.0, np.nan)
 
     # Step 2 - Replace NaN with demographic mean
     for x in replace_neg_one:
-        nv_df[x] = nv_df[x].fillna(nv_df.groupby(by=['age', 'educ', 'race', 'gender', 'income_cat'])[x].transform('mean'))
+        nv_df[x] = nv_df[x].fillna(nv_df.groupby(by=['age', 'Education', 'Race', 'Gender', 'Income'])[x].transform('mean'))
 
     # Create age bins
-    age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'elderly']
+    age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'seventies +']
     age_bins = [20, 30, 40, 50, 60, 70, 200]
-    nv_df['Age_Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
+    nv_df['Age Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
+
+    total_age = nv_df['Age Group'].count()
+    twenties = nv_df[nv_df['Age Group'] == 'twenties']['Age Group'].count() / total_age
+    thirties = nv_df[nv_df['Age Group'] == 'thirties']['Age Group'].count() / total_age
+    forties = nv_df[nv_df['Age Group'] == 'forties']['Age Group'].count() / total_age
+    fifties = nv_df[nv_df['Age Group'] == 'fifties']['Age Group'].count() / total_age
+    sixties = nv_df[nv_df['Age Group'] == 'sixties']['Age Group'].count() / total_age
+    elderly = nv_df[nv_df['Age Group'] == 'seventies +']['Age Group'].count() / total_age
+    age_percentages = [twenties, thirties, forties, fifties, sixties, elderly]
+    age_labels = ['Twenties', 'Thirties', 'Forties', 'Fifties', 'Sixties', 'Seventies +']
+
+
+
+    distinct_races = set(nv_df['Race'])
+    total_race = nv_df['Race'].count()
+    hispanic_percentage = nv_df[nv_df['Race'] == 'Hispanic']['Race'].count() / total_race
+    other_mixed_percentage = nv_df[nv_df['Race'] == 'Other/Mixed']['Race'].count() / total_race
+    white_percentage = nv_df[nv_df['Race'] == 'White']['Race'].count() / total_race
+    black_percentage = nv_df[nv_df['Race'] == 'Black']['Race'].count() / total_race
+    race_percentages = [white_percentage, black_percentage, hispanic_percentage, other_mixed_percentage]
+    race_labels = ['White', 'Black', 'Hispanic', 'Other/Mixed']
+
+    distinct_genders = set(nv_df['Gender'])
+    total_gender = nv_df['Gender'].count()
+    male_percentage = nv_df[nv_df['Gender'] == 'Male']['Gender'].count() / total_gender
+    female_percentage = nv_df[nv_df['Gender'] == 'Female']['Gender'].count() / total_gender
+    gender_percentages = [male_percentage, female_percentage]
+    gender_labels = ['Male', 'Female']
+
+    distinct_educ = set(nv_df['Education'])
+    total_educ = nv_df['Education'].count()
+    hs_percentage = nv_df[nv_df['Education'] == 'High school or less']['Education'].count() / total_educ
+    some_college_percentage = nv_df[nv_df['Education'] == 'Some college']['Education'].count() / total_educ
+    college_percentage = nv_df[nv_df['Education'] == 'College']['Education'].count() / total_educ
+    educ_percentages = [hs_percentage, some_college_percentage, college_percentage]
+    educ_labels = ['High School or Less', 'Some College', 'College']
+
+    distinct_income = set(nv_df['Income'])
+    total_income = nv_df['Income'].count()
+
+    income1_percentage = nv_df[nv_df['Income'] == 'Less than $40k']['Income'].count() / total_income
+    income2_percentage = nv_df[nv_df['Income'] == '$40-75k']['Income'].count() / total_income
+    income3_percentage = nv_df[nv_df['Income'] == '$75-125k']['Income'].count() / total_income
+    income4_percentage = nv_df[nv_df['Income'] == '$125k or more']['Income'].count() / total_income
+    income_percentages = [income1_percentage, income2_percentage, income3_percentage, income4_percentage]
+    income_labels = ['Less than $40k', '$40-75k', '$75-125k', '$125k or more']
 
     # Set demographics variable
-    demographics = nv_df[['Age_Group', 'educ', 'race', 'gender', 'income_cat','voter_category']]
+    demographics_data = nv_df[['Age Group','Education', 'Race', 'Gender', 'Income']]
+    demographics_list = list(demographics_data.columns)
+
+    # Set questions variable
+    questions = nv_df.iloc[:,0:87]
+    questions_list = list(questions.columns)
 
 if __name__ == '__main__':
-    voter_turnout() #read in data
-    main() #run app
+    voter_turnout()
+    main()
 
 
 

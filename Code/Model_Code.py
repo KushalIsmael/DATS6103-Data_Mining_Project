@@ -26,10 +26,10 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 from pathlib import Path
 dir = str(Path(os.getcwd()).parents[0])
-df = pd.read_csv(dir+'\\'+'nonvoters_data.csv', sep=',', header=0)
+#df = pd.read_csv(dir+'\\'+'nonvoters_data.csv', sep=',', header=0)
 
 # If having issues loading in, then run this:
-#df = pd.read_csv('nonvoters_data.csv')
+df = pd.read_csv('nonvoters_data.csv')
 
 # Change directory for graphing purposes
 graphing_dir = os.path.join(dir, 'Graphs')

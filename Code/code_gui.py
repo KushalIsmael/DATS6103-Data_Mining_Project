@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
 from sklearn.ensemble import GradientBoostingClassifier
 from pathlib import Path
+from sklearn.preprocessing import label_binarize
 
 
 from PyQt5.QtWidgets import *
@@ -256,16 +257,12 @@ class RandomForest(QMainWindow):
 
         self.boxResults = QLabel('Results Output from Model')
         self.Results = QPlainTextEdit()
-        self.boxAccuracy = QLabel('Accuracy Score')
-        self.Accuracy = QPlainTextEdit()
-        self.boxROC = QLabel('ROC Score')
-        self.ROC = QPlainTextEdit()
+        self.Accuracy = QLabel('Accuracy Score:')
+        self.ROC = QLabel('ROC Score:')
 
         self.ResultsLayout.addWidget(self.boxResults)
         self.ResultsLayout.addWidget(self.Results)
-        self.ResultsLayout.addWidget(self.boxAccuracy)
         self.ResultsLayout.addWidget(self.Accuracy)
-        self.ResultsLayout.addWidget(self.boxROC)
         self.ResultsLayout.addWidget(self.ROC)
 
         self.ModelBox1.addLayout(self.ResultsLayout)
@@ -320,6 +317,7 @@ class RandomForest(QMainWindow):
 
         self.Results.clear()
         self.Accuracy.clear()
+        self.ROC.clear()
         self.ax1.clear()
         self.ax2.clear()
         self.ax3.clear()
@@ -369,8 +367,8 @@ class RandomForest(QMainWindow):
         y_pred_proba = rf.predict_proba(X_test)
 
         # Output: accuracy metrics
-        self.accuracy_score_value = str(accuracy_score(y_test, y_pred) * 100)
-        self.Accuracy.appendPlainText(self.accuracy_score_value)
+        self.accuracy_score_value = 'Accuracy: '+str(accuracy_score(y_test, y_pred) * 100)
+        self.Accuracy.setText(self.accuracy_score_value)
 
 
         # Output: confusion matrix
@@ -393,20 +391,21 @@ class RandomForest(QMainWindow):
 
         # Output: ROC Curve
         #self.ax2.plot_roc_curve(rf, X_test, y_test)
-
         '''
-        n_classes = y_test.shape[0]
-        #auc_graph = roc_curve(rf, X_test, y_test)
+        y_test_bin = label_binarize(y_test, classes=[2, 1])
+        n_classes = y_test_bin.shape[0]
+
 
         fpr = dict()
         tpr = dict()
         roc_auc = dict()
         for i in range(n_classes):
-            fpr[i], tpr[i], _ = roc_curve(y_test.ravel(), y_pred)
+            fpr[i], tpr[i], _ = roc_curve(y_test_bin[i, :], y_pred_proba[i, :])
             roc_auc[i] = auc(fpr[i], tpr[i])
 
         # Compute micro-average ROC curve and ROC area
-        fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_pred)
+        fpr["micro"], tpr["micro"], _ = roc_curve(y_test_bin.ravel(), y_pred_proba.ravel())
+
         roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
         lw = 2
@@ -419,15 +418,13 @@ class RandomForest(QMainWindow):
         self.ax2.set_ylabel('True Positive Rate')
         self.ax2.set_title('ROC Curve Random Forest')
         self.ax2.legend(loc="lower right")
-        
         '''
-
         self.fig2.tight_layout()
         self.fig2.canvas.draw_idle()
 
         # Output: ROC score
-        #auc_score_value = roc_auc_score(y_test, y_pred_proba[:, 1])
-        #self.ROC.appendPlainText(str(auc_score_value))
+        self.auc_score_value = 'ROC Score: ' + str(roc_auc_score(y_test, y_pred_proba[:, 1])*100)
+        self.ROC.setText(self.auc_score_value)
 
 
         # Output Feature importance
@@ -435,6 +432,7 @@ class RandomForest(QMainWindow):
         feat_imp_final = pd.Series(imp_final, X_train.columns)
         feat_imp_final.sort_values(ascending=False, inplace=True)
         self.ax3.bar(x=feat_imp_final.index, height=feat_imp_final.values)
+        self.ax3.set_xticklabels(feat_imp_final.index, rotation=90)
         self.ax3.set_aspect('auto')
 
         self.fig3.tight_layout()

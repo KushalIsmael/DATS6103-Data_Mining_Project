@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import plot_roc_curve
+from sklearn.metrics import roc_curve, auc, plot_roc_curve
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, plot_confusion_matrix
@@ -277,22 +277,21 @@ class RandomForest(QMainWindow):
 
         self.ModelBox1.addWidget(self.canvasCFM)
 
-
         self.boxFeatImportance = QLabel('Feature Importance Graph')
 
         self.fig2 = Figure()
         self.ax2 = self.fig2.add_subplot(111)
         self.axes2 = [self.ax2]
-        self.canvasFI = FigureCanvas(self.fig2)
+        self.canvasROC = FigureCanvas(self.fig2)
 
-        self.ModelBox2.addWidget(self.canvasFI)
+        self.ModelBox2.addWidget(self.canvasROC)
 
         self.fig3 = Figure()
         self.ax3 = self.fig3.add_subplot(111)
         self.axes3 = [self.ax3]
-        self.canvasROC = FigureCanvas(self.fig3)
+        self.canvasFI = FigureCanvas(self.fig3)
 
-        self.ModelBox2.addWidget(self.canvasROC)
+        self.ModelBox2.addWidget(self.canvasFI)
 
 
         self.layout.addLayout(self.SelectionBox)
@@ -341,8 +340,8 @@ class RandomForest(QMainWindow):
 
         # Go through modeling steps in this function
         # Start with getting X, y, and train-test split
-        Xpre = df.drop(columns=['q23_which_candidate_supporting'], axis=1)
-        ypre = df['q23_which_candidate_supporting']
+        Xpre = df_mod.drop(columns=['q23_which_candidate_supporting'], axis=1)
+        ypre = df_mod['q23_which_candidate_supporting']
 
         X_pre_train, X_pre_test, y_pre_train, y_pre_test = train_test_split(Xpre, ypre, test_size=testperc,
                                                                             random_state=1918)
@@ -377,23 +376,51 @@ class RandomForest(QMainWindow):
         # Output: confusion matrix
         conf = confusion_matrix(y_test, y_pred)
 
-        class_names = [0,1,2,3]
+        class_names = df_mod['q23_which_candidate_supporting'].unique()
 
         self.ax1.set_xlabel('Predicted')
         self.ax1.set_ylabel('Actual')
+        self.ax1.set_yticklabels(class_names)
+        self.ax1.set_xticklabels(class_names)
 
         for i in range(len(class_names)):
             for j in range(len(class_names)):
                 self.ax1.text(j, i, str(conf[i][j]))
-        self.ax1.matshow(conf)
+        self.ax1.matshow(conf, cmap= plt.cm.get_cmap('Blues', 14))
 
-        #self.ax1.plot_confusion_matrix(conf)
         self.fig1.tight_layout()
         self.fig1.canvas.draw_idle()
 
         # Output: ROC Curve
+        #self.ax2.plot_roc_curve(rf, X_test, y_test)
 
-        #auc_graph = plot_roc_curve(rf, X_test, y_test)
+        '''
+        n_classes = y_test.shape[0]
+        #auc_graph = roc_curve(rf, X_test, y_test)
+
+        fpr = dict()
+        tpr = dict()
+        roc_auc = dict()
+        for i in range(n_classes):
+            fpr[i], tpr[i], _ = roc_curve(y_test.ravel(), y_pred)
+            roc_auc[i] = auc(fpr[i], tpr[i])
+
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_pred)
+        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+
+        lw = 2
+        self.ax2.plot(fpr[2], tpr[2], color='darkorange',
+                      lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[2])
+        self.ax2.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        self.ax2.set_xlim([0.0, 1.0])
+        self.ax2.set_ylim([0.0, 1.05])
+        self.ax2.set_xlabel('False Positive Rate')
+        self.ax2.set_ylabel('True Positive Rate')
+        self.ax2.set_title('ROC Curve Random Forest')
+        self.ax2.legend(loc="lower right")
+        
+        '''
 
         self.fig2.tight_layout()
         self.fig2.canvas.draw_idle()
@@ -534,6 +561,7 @@ def voter_turnout():
     # read in data and set global variables to be used in models and graphs
 
     global df
+    global df_mod
     global demographics_data
     global demographics_list
     global questions
@@ -776,6 +804,12 @@ def voter_turnout():
     df['Income'] = le.fit_transform(df['Income'])
     df['voter_category'] = le.fit_transform(df['voter_category'])
     df['Age_Group'] = le.fit_transform(df['Age_Group'])
+
+    # For q23_which_candidate_supporting, value of 1 is Trump and value of 2 is Biden
+    # Drop unsure (value of 3) and refused to answer (value of -1) to set up our two-way classification
+    df_mod = df[(df['q23_which_candidate_supporting'] == 1) | (df['q23_which_candidate_supporting'] == 2)]
+
+
 
 
 

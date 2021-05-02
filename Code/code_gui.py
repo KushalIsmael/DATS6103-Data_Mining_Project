@@ -1,8 +1,19 @@
 import pandas as pd
 import numpy as np
-from pathlib import Path
 import os
 import sys
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import plot_roc_curve
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, plot_confusion_matrix
+from sklearn.metrics import classification_report
+from sklearn.metrics import roc_auc_score
+from sklearn.ensemble import GradientBoostingClassifier
+from pathlib import Path
 
 
 from PyQt5.QtWidgets import *
@@ -11,7 +22,6 @@ from PyQt5.QtCore import pyqtSignal
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 
 class Survey(QMainWindow):
 
@@ -38,7 +48,7 @@ class Survey(QMainWindow):
 
         self.questions = QLabel('1 - Are you a US Citizen? 1.Yes/2.No'
                                 '\n2 - In your view, how important are each of the following to being a good American?'
-                                '\n -Voting in elections 1.Very Important/2.Somewhat Import/3.Not so important/4.Not at all important')
+                                '\n -Voting in elections 1=Very Important/2=Somewhat Import/3=Not so important/4=Not at all important')
                                 #set text for questions widget
 
         self.layout.addWidget(self.questions)
@@ -73,6 +83,7 @@ class Demographics(QDialog):
     def __init__(self):
         super(Demographics, self).__init__()
         self.Title = "Demographics of Survey Respondents"
+        self.setWindowTitle(self.Title)
 
         # Race pie
         self.figure = Figure()
@@ -220,7 +231,7 @@ class RandomForest(QMainWindow):
         self.layout = QVBoxLayout(self.main_widget)
         self.SelectionBox = QHBoxLayout()  # sets horizontal layout for selection box
         self.ModelBox1 = QHBoxLayout()  # sets horizontal layout for Results and Conf Matrix
-        self.Results = QVBoxLayout()  # set vertical layout for Results and Accuracy score
+        self.ResultsLayout = QVBoxLayout()  # set vertical layout for Results and Accuracy score
         self.ModelBox2 = QHBoxLayout()  # sets horizontal layout for Feature Importance and ROC
 
         self.labelPercentTest = QLabel('Percent to test:')
@@ -234,7 +245,7 @@ class RandomForest(QMainWindow):
         self.boxFeature.setValue(20)
 
         self.buttonRun = QPushButton("Run Model")
-        # self.buttonRun.clicked.connect(self.update) update function not yet set
+        self.buttonRun.clicked.connect(self.update)
 
         self.SelectionBox.addWidget(self.labelPercentTest)
         self.SelectionBox.addWidget(self.boxPercentTest)
@@ -244,22 +255,40 @@ class RandomForest(QMainWindow):
 
 
         self.boxResults = QLabel('Results Output from Model')
+        self.Results = QPlainTextEdit()
         self.boxAccuracy = QLabel('Accuracy Score')
+        self.Accuracy = QPlainTextEdit()
 
-        self.Results.addWidget(self.boxResults)
-        self.Results.addWidget(self.boxAccuracy)
+        self.ResultsLayout.addWidget(self.boxResults)
+        self.ResultsLayout.addWidget(self.Results)
+        self.ResultsLayout.addWidget(self.boxAccuracy)
+        self.ResultsLayout.addWidget(self.Accuracy)
 
-        self.ModelBox1.addLayout(self.Results)
+        self.ModelBox1.addLayout(self.ResultsLayout)
 
-        self.boxMatrix = QLabel('Confusion Matrix')
-        self.ModelBox1.addWidget(self.boxMatrix)
+        self.fig1 = Figure()
+        self.ax1 = self.fig1.add_subplot(111)
+        self.axes1 = [self.ax1]
+        self.canvasCFM = FigureCanvas(self.fig1)
+
+        self.ModelBox1.addWidget(self.canvasCFM)
 
 
         self.boxFeatImportance = QLabel('Feature Importance Graph')
-        self.boxROC = QLabel('ROC Curve')
 
-        self.ModelBox2.addWidget(self.boxFeatImportance)
-        self.ModelBox2.addWidget(self.boxROC)
+        self.fig2 = Figure()
+        self.ax2 = self.fig2.add_subplot(111)
+        self.axes2 = [self.ax2]
+        self.canvasFI = FigureCanvas(self.fig2)
+
+        self.ModelBox2.addWidget(self.canvasFI)
+
+        self.fig3 = Figure()
+        self.ax3 = self.fig3.add_subplot(111)
+        self.axes3 = [self.ax3]
+        self.canvasROC = FigureCanvas(self.fig3)
+
+        self.ModelBox2.addWidget(self.canvasROC)
 
 
         self.layout.addLayout(self.SelectionBox)
@@ -269,6 +298,105 @@ class RandomForest(QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.resize(1000, 800)
         self.show()
+
+    def update(self):
+
+        testperc = float(self.boxPercentTest.value())/100
+        num_features = int(self.boxFeature.value())
+
+        '''
+        :param df: Dataframe of all observations (train and test) to build model.
+        :param num_features: The number of features to include in the model (all variables except target).
+        :param test_percent: Percent of data to use in test (i.e. 0.3 means 70% train, 30% test).
+        :return: accuracy_score_value: The accuracy of the RF model with the parameters passed above. (TP + FN)/ (TP + FP + TN + FN)
+        :return: conf: Confusion matrix of RF model. This classifies the true positives, false positives, true negatives, false negatives.
+        :return: auc_graph: Graph of AUC (area under curve) of the RF model.
+        :return: auc_score_value: AUC (area under curve) score. Random guessing is 0.5, and closer to 1 means smarter model.
+        :return: feature_importance_plot: Importance of the num_features chosen. Higher importance means it greater reduces entropy in classification.
+        '''
+
+        self.Results.clear()
+        self.Accuracy.clear()
+        self.ax1.clear()
+        self.ax2.clear()
+        self.ax3.clear()
+
+        # Create empty variables to return if the user passes in invalid parameters
+        auc_null = np.nan
+        conf_null = np.zeros((2, 2), dtype=int)
+        auc__null_graph = plt.plot()
+        auc_score_null = np.nan
+        feature_importance_plot_null = plt.plot()
+
+        # There are only 92 features available
+        if (num_features < 1) or (num_features > 92):
+            return auc_null, conf_null, auc__null_graph, auc_score_null, feature_importance_plot_null
+        # We cannot test on 0 or 100 percent of our data
+        if (testperc < 0.01) or (testperc > 0.99):
+            return auc_null, conf_null, auc__null_graph, auc_score_null, feature_importance_plot_null
+
+        # Go through modeling steps in this function
+        # Start with getting X, y, and train-test split
+        Xpre = df.drop(columns=['q23_which_candidate_supporting'], axis=1)
+        ypre = df['q23_which_candidate_supporting']
+
+        X_pre_train, X_pre_test, y_pre_train, y_pre_test = train_test_split(Xpre, ypre, test_size=testperc,
+                                                                            random_state=1918)
+
+        # Fit the model
+        rf_pre = RandomForestClassifier()
+        rf_pre.fit(X_pre_train, y_pre_train)
+
+        # Get the most important features
+        importances = rf_pre.feature_importances_
+        feat_imp = pd.Series(importances, X_pre_train.columns)
+        feat_imp.sort_values(ascending=False, inplace=True)
+        features_to_keep = feat_imp.index[0:num_features]
+
+        # Re-fit with the slimmed down list
+        X = Xpre[features_to_keep]
+        y = ypre
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=testperc, random_state=1918)
+
+        # Fit the model
+        rf = RandomForestClassifier()
+        rf.fit(X_train, y_train)
+        y_pred = rf.predict(X_test)
+        y_pred_proba = rf.predict_proba(X_test)
+
+        # Output: accuracy metrics
+        self.accuracy_score_value = str(accuracy_score(y_test, y_pred) * 100)
+        self.Accuracy.appendPlainText(self.accuracy_score_value)
+
+
+        # Output: confusion matrix
+        conf = confusion_matrix(y_test, y_pred)
+
+        #self.ax1.plot_confusion_matrix(conf)
+        self.fig1.tight_layout()
+        self.fig1.canvas.draw_idle()
+
+        # Output: ROC Curve
+        #auc_graph = plot_roc_curve(rf, X_test, y_test)
+
+        self.fig2.tight_layout()
+        self.fig2.canvas.draw_idle()
+
+        # Output: ROC score
+        #auc_score_value = roc_auc_score(y_test, y_pred_proba[:, 1])
+
+        # Output Feature importance
+        imp_final = rf.feature_importances_
+        feat_imp_final = pd.Series(imp_final, X_train.columns)
+        feat_imp_final.sort_values(ascending=False, inplace=True)
+        self.ax3.bar(x=feat_imp_final.index, height=feat_imp_final.values)
+        self.ax3.set_aspect('auto')
+
+        self.fig3.tight_layout()
+        self.fig3.canvas.draw_idle()
+
+
 
 class App(QMainWindow):
 
@@ -311,7 +439,7 @@ class App(QMainWindow):
         # Exit text tip
         #::--------------------------------------
 
-        exitButton = QAction(QIcon('Icons//exit.png'), '&Exit', self)
+        exitButton = QAction(QIcon('Code//Icons//exit.png'), '&Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)
@@ -388,6 +516,7 @@ def main():
 def voter_turnout():
     # read in data and set global variables to be used in models and graphs
 
+    global df
     global demographics_data
     global demographics_list
     global questions
@@ -404,9 +533,35 @@ def voter_turnout():
     global age_percentages
 
     dir = str(Path(os.getcwd()).parents[0])
-    nv_df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
+    df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
 
-    nv_df.columns = ['RespId', 'weight',
+    # If having issues loading in, then run this:
+    # df = pd.read_csv('nonvoters_data.csv')
+
+    # Change directory for graphing purposes
+    graphing_dir = os.path.join(dir, 'Graphs')
+    if not os.path.exists(graphing_dir):
+        os.mkdir(graphing_dir)
+    os.chdir(graphing_dir)
+
+    ##### Exploratory data analysis ##### ---------------------------------------------------------------------------------
+
+    print(df.head)
+    initial_cols = df.columns
+    print([x for x in df.columns])
+
+    print(df['Q1'].value_counts())
+    print(df['ppage'].value_counts())
+    print(df['educ'].value_counts())
+    print(df['race'].value_counts())
+    print(df['gender'].value_counts())
+    print(df['income_cat'].value_counts())
+    print(df['voter_category'].value_counts())
+
+    #### Data Pre-Processing to prepare for modeling ##### -----------------------------------------------------------------
+
+    # Rename columns to descriptive names
+    df.columns = ['RespId', 'weight',
                   'q1_uscitizen',
                   'q2_important_voting', 'q2_important_jury', 'q2_important_following', 'q2_important_displaying',
                   'q2_important_census',
@@ -461,12 +616,12 @@ def voter_turnout():
                   'q31_republicantype',
                   'q32_democratictype',
                   'q33_closertowhichparty',
-                  'age', 'Education', 'Race', 'Gender', 'Income', 'voter_category'
+                  'Age', 'Education', 'Race', 'Gender', 'Income', 'voter_category'
                   ]
 
     # Drop irrelevant fields (US Citizen, responder ID, observation weight)
     # Drop questions that were not asked to all participants (i.e. "why did you vote" to non-voters, "Republican type" for Democrats)
-    nv_df.drop(['q1_uscitizen', 'q22_whynotvoting_2020',
+    df.drop(['q1_uscitizen', 'q22_whynotvoting_2020',
              'q28_whydidyouvote_past1', 'q28_whydidyouvote_past2', 'q28_whydidyouvote_past3', 'q28_whydidyouvote_past4',
              'q28_whydidyouvote_past5', 'q28_whydidyouvote_past6', 'q28_whydidyouvote_past7', 'q28_whydidyouvote_past8',
              'q29_whydidyounotvote_past1', 'q29_whydidyounotvote_past2', 'q29_whydidyounotvote_past3',
@@ -526,73 +681,86 @@ def voter_turnout():
         'q30_partyidentification'
     ]
 
-    # Step 1 - Replace -1 or -1.0 values with NaN
-    # Values might be stored as int or float, so account for both
-    nv_df[replace_neg_one] = nv_df[replace_neg_one].replace(-1, np.nan)
-    nv_df[replace_neg_one] = nv_df[replace_neg_one].replace(-1.0, np.nan)
-
-    # Step 2 - Replace NaN with demographic mean
-    for x in replace_neg_one:
-        nv_df[x] = nv_df[x].fillna(nv_df.groupby(by=['age', 'Education', 'Race', 'Gender', 'Income'])[x].transform('mean'))
-
-    # Create age bins
+    # Step 1 - Add column, Age_Group
     age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'seventies +']
     age_bins = [20, 30, 40, 50, 60, 70, 200]
-    nv_df['Age Group'] = pd.cut(nv_df['age'], bins=age_bins, labels=age_labels_cut, right=False)
+    df['Age_Group'] = pd.cut(df['Age'], bins=age_bins, labels=age_labels_cut, right=False)
 
-    total_age = nv_df['Age Group'].count()
-    twenties = nv_df[nv_df['Age Group'] == 'twenties']['Age Group'].count() / total_age
-    thirties = nv_df[nv_df['Age Group'] == 'thirties']['Age Group'].count() / total_age
-    forties = nv_df[nv_df['Age Group'] == 'forties']['Age Group'].count() / total_age
-    fifties = nv_df[nv_df['Age Group'] == 'fifties']['Age Group'].count() / total_age
-    sixties = nv_df[nv_df['Age Group'] == 'sixties']['Age Group'].count() / total_age
-    elderly = nv_df[nv_df['Age Group'] == 'seventies +']['Age Group'].count() / total_age
+    # Step 2 - Replace -1 or -1.0 values with NaN
+    # Values might be stored as int or float, so account for both
+    df[replace_neg_one] = df[replace_neg_one].replace(-1, np.nan)
+    df[replace_neg_one] = df[replace_neg_one].replace(-1.0, np.nan)
+
+    # Step 3 - Replace NaN with demographic mean
+    for x in replace_neg_one:
+        df[x] = df[x].fillna(df.groupby(by=['Education', 'Race', 'Gender', 'Income'])[x].transform('mean'))
+
+    # Identify values of the target variable
+    print(df['q23_which_candidate_supporting'].value_counts())
+
+    total_age = df['Age_Group'].count()
+    twenties = df[df['Age_Group'] == 'twenties']['Age_Group'].count() / total_age
+    thirties = df[df['Age_Group'] == 'thirties']['Age_Group'].count() / total_age
+    forties = df[df['Age_Group'] == 'forties']['Age_Group'].count() / total_age
+    fifties = df[df['Age_Group'] == 'fifties']['Age_Group'].count() / total_age
+    sixties = df[df['Age_Group'] == 'sixties']['Age_Group'].count() / total_age
+    elderly = df[df['Age_Group'] == 'seventies +']['Age_Group'].count() / total_age
     age_percentages = [twenties, thirties, forties, fifties, sixties, elderly]
     age_labels = ['Twenties', 'Thirties', 'Forties', 'Fifties', 'Sixties', 'Seventies +']
 
 
 
-    distinct_races = set(nv_df['Race'])
-    total_race = nv_df['Race'].count()
-    hispanic_percentage = nv_df[nv_df['Race'] == 'Hispanic']['Race'].count() / total_race
-    other_mixed_percentage = nv_df[nv_df['Race'] == 'Other/Mixed']['Race'].count() / total_race
-    white_percentage = nv_df[nv_df['Race'] == 'White']['Race'].count() / total_race
-    black_percentage = nv_df[nv_df['Race'] == 'Black']['Race'].count() / total_race
+    distinct_races = set(df['Race'])
+    total_race = df['Race'].count()
+    hispanic_percentage = df[df['Race'] == 'Hispanic']['Race'].count() / total_race
+    other_mixed_percentage = df[df['Race'] == 'Other/Mixed']['Race'].count() / total_race
+    white_percentage = df[df['Race'] == 'White']['Race'].count() / total_race
+    black_percentage = df[df['Race'] == 'Black']['Race'].count() / total_race
     race_percentages = [white_percentage, black_percentage, hispanic_percentage, other_mixed_percentage]
     race_labels = ['White', 'Black', 'Hispanic', 'Other/Mixed']
 
-    distinct_genders = set(nv_df['Gender'])
-    total_gender = nv_df['Gender'].count()
-    male_percentage = nv_df[nv_df['Gender'] == 'Male']['Gender'].count() / total_gender
-    female_percentage = nv_df[nv_df['Gender'] == 'Female']['Gender'].count() / total_gender
+    distinct_genders = set(df['Gender'])
+    total_gender = df['Gender'].count()
+    male_percentage = df[df['Gender'] == 'Male']['Gender'].count() / total_gender
+    female_percentage = df[df['Gender'] == 'Female']['Gender'].count() / total_gender
     gender_percentages = [male_percentage, female_percentage]
     gender_labels = ['Male', 'Female']
 
-    distinct_educ = set(nv_df['Education'])
-    total_educ = nv_df['Education'].count()
-    hs_percentage = nv_df[nv_df['Education'] == 'High school or less']['Education'].count() / total_educ
-    some_college_percentage = nv_df[nv_df['Education'] == 'Some college']['Education'].count() / total_educ
-    college_percentage = nv_df[nv_df['Education'] == 'College']['Education'].count() / total_educ
+    distinct_educ = set(df['Education'])
+    total_educ = df['Education'].count()
+    hs_percentage = df[df['Education'] == 'High school or less']['Education'].count() / total_educ
+    some_college_percentage = df[df['Education'] == 'Some college']['Education'].count() / total_educ
+    college_percentage = df[df['Education'] == 'College']['Education'].count() / total_educ
     educ_percentages = [hs_percentage, some_college_percentage, college_percentage]
     educ_labels = ['High School or Less', 'Some College', 'College']
 
-    distinct_income = set(nv_df['Income'])
-    total_income = nv_df['Income'].count()
+    distinct_income = set(df['Income'])
+    total_income = df['Income'].count()
 
-    income1_percentage = nv_df[nv_df['Income'] == 'Less than $40k']['Income'].count() / total_income
-    income2_percentage = nv_df[nv_df['Income'] == '$40-75k']['Income'].count() / total_income
-    income3_percentage = nv_df[nv_df['Income'] == '$75-125k']['Income'].count() / total_income
-    income4_percentage = nv_df[nv_df['Income'] == '$125k or more']['Income'].count() / total_income
+    income1_percentage = df[df['Income'] == 'Less than $40k']['Income'].count() / total_income
+    income2_percentage = df[df['Income'] == '$40-75k']['Income'].count() / total_income
+    income3_percentage = df[df['Income'] == '$75-125k']['Income'].count() / total_income
+    income4_percentage = df[df['Income'] == '$125k or more']['Income'].count() / total_income
     income_percentages = [income1_percentage, income2_percentage, income3_percentage, income4_percentage]
     income_labels = ['Less than $40k', '$40-75k', '$75-125k', '$125k or more']
 
     # Set demographics variable
-    demographics_data = nv_df[['Age Group','Education', 'Race', 'Gender', 'Income']]
+    demographics_data = df[['Age_Group','Education', 'Race', 'Gender', 'Income']]
     demographics_list = list(demographics_data.columns)
 
     # Set questions variable
-    questions = nv_df.iloc[:,0:87]
+    questions = df.iloc[:,0:87]
     questions_list = list(questions.columns)
+
+    le = LabelEncoder()
+    df['Education'] = le.fit_transform(df['Education'])
+    df['Race'] = le.fit_transform(df['Race'])
+    df['Gender'] = le.fit_transform(df['Gender'])
+    df['Income'] = le.fit_transform(df['Income'])
+    df['voter_category'] = le.fit_transform(df['voter_category'])
+    df['Age_Group'] = le.fit_transform(df['Age_Group'])
+
+
 
 if __name__ == '__main__':
     voter_turnout()

@@ -258,11 +258,15 @@ class RandomForest(QMainWindow):
         self.Results = QPlainTextEdit()
         self.boxAccuracy = QLabel('Accuracy Score')
         self.Accuracy = QPlainTextEdit()
+        self.boxROC = QLabel('ROC Score')
+        self.ROC = QPlainTextEdit()
 
         self.ResultsLayout.addWidget(self.boxResults)
         self.ResultsLayout.addWidget(self.Results)
         self.ResultsLayout.addWidget(self.boxAccuracy)
         self.ResultsLayout.addWidget(self.Accuracy)
+        self.ResultsLayout.addWidget(self.boxROC)
+        self.ResultsLayout.addWidget(self.ROC)
 
         self.ModelBox1.addLayout(self.ResultsLayout)
 
@@ -373,11 +377,22 @@ class RandomForest(QMainWindow):
         # Output: confusion matrix
         conf = confusion_matrix(y_test, y_pred)
 
+        class_names = [0,1,2,3]
+
+        self.ax1.set_xlabel('Predicted')
+        self.ax1.set_ylabel('Actual')
+
+        for i in range(len(class_names)):
+            for j in range(len(class_names)):
+                self.ax1.text(j, i, str(conf[i][j]))
+        self.ax1.matshow(conf)
+
         #self.ax1.plot_confusion_matrix(conf)
         self.fig1.tight_layout()
         self.fig1.canvas.draw_idle()
 
         # Output: ROC Curve
+
         #auc_graph = plot_roc_curve(rf, X_test, y_test)
 
         self.fig2.tight_layout()
@@ -385,6 +400,8 @@ class RandomForest(QMainWindow):
 
         # Output: ROC score
         #auc_score_value = roc_auc_score(y_test, y_pred_proba[:, 1])
+        #self.ROC.appendPlainText(str(auc_score_value))
+
 
         # Output Feature importance
         imp_final = rf.feature_importances_

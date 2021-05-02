@@ -1,7 +1,7 @@
 '''
-#---------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
 FiveThirtyEight Non-Voters Dataset
-#---------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------
 '''
 
 ##### Import packages and data #####
@@ -37,7 +37,7 @@ if not os.path.exists(graphing_dir):
     os.mkdir(graphing_dir)
 os.chdir(graphing_dir)
 
-##### Exploratory data analysis ##### --------------------------------------------------------------------------
+##### Exploratory data analysis ##### ---------------------------------------------------------------------------------
 
 
 print(df.head)
@@ -53,7 +53,7 @@ print(df['income_cat'].value_counts())
 print(df['voter_category'].value_counts())
 
 
-#### Data Pre-Processing to prepare for modeling ##### --------------------------------------------------------------------------
+#### Data Pre-Processing to prepare for modeling ##### -----------------------------------------------------------------
 
 # Rename columns to descriptive names
 df.columns = ['RespId', 'weight',
@@ -173,7 +173,7 @@ for x in replace_neg_one:
 print(df['q23_which_candidate_supporting'].value_counts())
 
 
-##### EDA - Normality Checks ##### --------------------------------------------------------------------------
+##### EDA - Normality Checks ##### ------------------------------------------------------------------------------------
 
 # %%-----------------------------------------------------------------------
 # Race Pie Chart & Histogram
@@ -297,7 +297,7 @@ plt.tight_layout()
 plt.show()
 
 
-##### Label Encoding ##### --------------------------------------------------------------------------
+##### Label Encoding ##### --------------------------------------------------------------------------------------------
 
 # Transform non-numeric categorical variables into numeric for model processing
 le = LabelEncoder()
@@ -309,7 +309,7 @@ df['voter_category'] = le.fit_transform(df['voter_category'])
 df['Age_Group'] = le.fit_transform(df['Age_Group'])
 
 
-##### Random Forest Model - Full Model with All Features ##### --------------------------------------------------------------------------
+##### Random Forest Model - Full Model with All Features ##### --------------------------------------------------------
 
 # For q23_which_candidate_supporting, value of 1 is Trump and value of 2 is Biden
 # Drop unsure (value of 3) and refused to answer (value of -1) to set up our two-way classification
@@ -335,6 +335,7 @@ y_pred_probs = clf.predict_proba(X_test)
 # More area under the curve indicates the model has skill in finding true positives and avoiding false positives
 plot_roc_curve(clf, X_test, y_test)
 plt.savefig('roc_curve_full_model.png', dpi=300, bbox_inches='tight')
+plt.title(label='ROC Random Forest Classifier - All Features')
 plt.show()
 
 # Get feature importances and plot them
@@ -381,7 +382,7 @@ plt.xlabel('Predicted label',fontsize=20)
 plt.tight_layout()
 plt.show()
 
-##### Feature Importance Analysis ##### --------------------------------------------------------------------------
+##### Feature Importance Analysis ##### -------------------------------------------------------------------------------
 
 # Get top 20 features
 top20 = feat_imp.index[0:20]
@@ -400,7 +401,7 @@ corr_heatmap.set_xticklabels(labels=df20.columns, rotation=30, fontsize=9, ha='r
 plt.savefig('heatmap_top20_features.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-##### Random Forest Model - Slim model without the top features ##### --------------------------------------------------------------------------
+##### Random Forest Model - Slim model without the top features ##### --------------------------------------------------
 
 # Run another model without top features such as party identification and trust of presidency
 # These variables are very highly correlated with view of Trump, GOP, Dems, etc.
@@ -421,6 +422,7 @@ y_slim_pred_probs = clf2.predict_proba(X_slim_test)
 # Plot ROC curve
 plot_roc_curve(clf2, X_slim_test, y_slim_test)
 plt.savefig('roc_curve_slim_model.png', dpi=300, bbox_inches='tight')
+plt.title(label='ROC Random Forest Classifier - Slim Model')
 plt.show()
 
 # Get feature importances
@@ -451,10 +453,17 @@ print("ROC_AUC : ", roc_auc_score(y_slim_test,y_slim_pred_probs[:,1]) * 100)
 
 # Gradient Boosting Classifier ALL Features
 
-gb_clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.05)
+gb_clf = GradientBoostingClassifier(n_estimators=500, learning_rate=0.05)
 gb_clf.fit(X_train, y_train)
 gb_pred = gb_clf.predict(X_test)
 gb_score = gb_clf.predict_proba(X_test)
+
+# Plot ROC curve
+# More area under the curve indicates the model has skill in finding true positives and avoiding false positives
+plot_roc_curve(gb_clf, X_test, y_test)
+plt.savefig('roc_curve_GB_full_model.png', dpi=300, bbox_inches='tight')
+plt.title(label='ROC Gradient Boost Classifier - All Features')
+plt.show()
 
 # Calculate metrics for boosting model
 
@@ -473,10 +482,17 @@ print("ROC_AUC : ", roc_auc_score(y_test,gb_score[:,1]) * 100)
 
 # Gradient Boosting Classifier on Slim Dataframe
 
-gb_clf = GradientBoostingClassifier(n_estimators=100, learning_rate=0.05)
-gb_clf.fit(X_slim_train, y_slim_train)
-gb_pred = gb_clf.predict(X_slim_test)
-gb_score = gb_clf.predict_proba(X_slim_test)
+gb2_clf = GradientBoostingClassifier(n_estimators=500, learning_rate=0.05)
+gb2_clf.fit(X_slim_train, y_slim_train)
+gb2_pred = gb2_clf.predict(X_slim_test)
+gb2_score = gb2_clf.predict_proba(X_slim_test)
+
+# Plot ROC curve
+# More area under the curve indicates the model has skill in finding true positives and avoiding false positives
+plot_roc_curve(gb2_clf, X_slim_test, y_slim_test)
+plt.savefig('roc_curve_GB_slim_model.png', dpi=300, bbox_inches='tight')
+plt.title(label='ROC Gradient Boost Classifier - Slim Features')
+plt.show()
 
 # Calculate metrics for boosting model
 
@@ -484,16 +500,16 @@ print("\n")
 print("Results Using Gradient Boosting & Slim Dataframe: \n")
 
 print("Classification Report: ")
-print(classification_report(y_test,gb_pred))
+print(classification_report(y_test,gb2_pred))
 print("\n")
 
-print("Accuracy : ", accuracy_score(y_test, gb_pred) * 100)
+print("Accuracy : ", accuracy_score(y_test, gb2_pred) * 100)
 print("\n")
 
-print("ROC_AUC : ", roc_auc_score(y_test,gb_score[:,1]) * 100)
+print("ROC_AUC : ", roc_auc_score(y_test,gb2_score[:,1]) * 100)
 print("\n")
 
-# %%-----------------------------------------------------------------------
+# %%--------------------------------------------------------------------------------------------------------------------
 
 # Function for GUI
 

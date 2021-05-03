@@ -48,10 +48,9 @@ class Survey(QMainWindow):
         self.layout = QVBoxLayout(self.main_widget) #set vertical layout
 
         self.questions = QLabel('1 - Are you a US Citizen? 1.Yes/2.No'
-                                '\n2 - In your view, how important are each of the following to being a good American?'
-                                '\n -Voting in elections 1=Very Important/2=Somewhat Import/3=Not so important/4=Not at all important')
+                               '\n2 - In your view, how important are each of the following to being a good American?'
+                               '\n -Voting in elections 1=Very Important/2=Somewhat Import/3=Not so important/4=Not at all important')
                                 #set text for questions widget
-
         self.layout.addWidget(self.questions)
 
         self.setCentralWidget(self.main_widget)
@@ -237,13 +236,13 @@ class RandomForest(QMainWindow):
 
         self.labelPercentTest = QLabel('Percent to test:')
         self.boxPercentTest = QSpinBox(self)
-        self.boxPercentTest.setRange(1, 100)
-        self.boxPercentTest.setValue(30)
+        self.boxPercentTest.setRange(1, 99)
+        self.boxPercentTest.setValue(25)
 
-        self.labelFeature = QLabel('Top Features:')
+        self.labelFeature = QLabel('Number of Features:')
         self.boxFeature = QSpinBox(self)
-        self.boxFeature.setRange(1, 20)
-        self.boxFeature.setValue(20)
+        self.boxFeature.setRange(1, 92)
+        self.boxFeature.setValue(25)
 
         self.buttonRun = QPushButton("Run Model")
         self.buttonRun.clicked.connect(self.update)
@@ -255,7 +254,7 @@ class RandomForest(QMainWindow):
         self.SelectionBox.addWidget(self.buttonRun)
 
 
-        self.boxResults = QLabel('Results Output from Model')
+        self.boxResults = QLabel('Classification Report:')
         self.Results = QPlainTextEdit()
         self.Accuracy = QLabel('Accuracy Score:')
         self.ROC = QLabel('ROC Score:')
@@ -366,10 +365,13 @@ class RandomForest(QMainWindow):
         y_pred = rf.predict(X_test)
         y_pred_proba = rf.predict_proba(X_test)
 
+        # Output: classifcation report
+        self.results = str(classification_report(y_test,y_pred))
+        self.Results.appendPlainText(self.results)
+
         # Output: accuracy metrics
         self.accuracy_score_value = 'Accuracy: '+str(accuracy_score(y_test, y_pred) * 100)
         self.Accuracy.setText(self.accuracy_score_value)
-
 
         # Output: confusion matrix
         conf = confusion_matrix(y_test, y_pred)
@@ -380,6 +382,7 @@ class RandomForest(QMainWindow):
         self.ax1.set_ylabel('Actual')
         self.ax1.set_yticklabels(class_names)
         self.ax1.set_xticklabels(class_names)
+        self.ax1.set_title('Confusion Matrix')
 
         for i in range(len(class_names)):
             for j in range(len(class_names)):
@@ -391,34 +394,14 @@ class RandomForest(QMainWindow):
 
         # Output: ROC Curve
         #self.ax2.plot_roc_curve(rf, X_test, y_test)
-        '''
-        y_test_bin = label_binarize(y_test, classes=[2, 1])
-        n_classes = y_test_bin.shape[0]
 
-
-        fpr = dict()
-        tpr = dict()
-        roc_auc = dict()
-        for i in range(n_classes):
-            fpr[i], tpr[i], _ = roc_curve(y_test_bin[i, :], y_pred_proba[i, :])
-            roc_auc[i] = auc(fpr[i], tpr[i])
-
-        # Compute micro-average ROC curve and ROC area
-        fpr["micro"], tpr["micro"], _ = roc_curve(y_test_bin.ravel(), y_pred_proba.ravel())
-
-        roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-
-        lw = 2
-        self.ax2.plot(fpr[2], tpr[2], color='darkorange',
-                      lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[2])
-        self.ax2.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-        self.ax2.set_xlim([0.0, 1.0])
-        self.ax2.set_ylim([0.0, 1.05])
+        fpr, tpr, threholds = roc_curve(y_test.values, y_pred_proba[:, 1], pos_label=2)
+        self.ax2.plot(fpr,tpr)
+        self.ax2.set_title("ROC Curve")
         self.ax2.set_xlabel('False Positive Rate')
         self.ax2.set_ylabel('True Positive Rate')
-        self.ax2.set_title('ROC Curve Random Forest')
         self.ax2.legend(loc="lower right")
-        '''
+
         self.fig2.tight_layout()
         self.fig2.canvas.draw_idle()
 
@@ -431,13 +414,13 @@ class RandomForest(QMainWindow):
         imp_final = rf.feature_importances_
         feat_imp_final = pd.Series(imp_final, X_train.columns)
         feat_imp_final.sort_values(ascending=False, inplace=True)
-        self.ax3.bar(x=feat_imp_final.index, height=feat_imp_final.values)
-        self.ax3.set_xticklabels(feat_imp_final.index, rotation=90)
+        self.ax3.barh(feat_imp_final.index,feat_imp_final.values)
+        self.ax3.set_yticklabels(feat_imp_final.index)
         self.ax3.set_aspect('auto')
+        self.ax3.set_title('Feature Importance')
 
         self.fig3.tight_layout()
         self.fig3.canvas.draw_idle()
-
 
 
 class App(QMainWindow):
@@ -454,7 +437,7 @@ class App(QMainWindow):
 
         #:: Title for the application
 
-        self.setWindowIcon(QIcon('vote.png')) #Icon made by Pixel perfect from www.flaticon.com
+        self.setWindowIcon(QIcon('Code//Icons//exit.png')) #Icon made by Pixel perfect from www.flaticon.com
         self.Title = 'Voter Turnout Survey'
 
         self.initUI()
@@ -481,7 +464,7 @@ class App(QMainWindow):
         # Exit text tip
         #::--------------------------------------
 
-        exitButton = QAction(QIcon('Code//Icons//exit.png'), '&Exit', self)
+        exitButton = QAction(QIcon(str(dir) + '\\' +'exit.png'), '&Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)

@@ -6,16 +6,12 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import roc_curve, auc, plot_roc_curve
+from sklearn.metrics import roc_curve
 from sklearn.metrics import accuracy_score
-from sklearn.metrics import roc_auc_score
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, plot_confusion_matrix
+from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
-from sklearn.ensemble import GradientBoostingClassifier
 from pathlib import Path
-from sklearn.preprocessing import label_binarize
-
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
@@ -45,7 +41,7 @@ class Survey(QMainWindow):
         self.setWindowTitle(self.Title)
         self.main_widget = QWidget(self)
 
-        self.layout = QVBoxLayout(self.main_widget) #set vertical layout
+        self.layout = QVBoxLayout(self.main_widget)
 
         self.questions = QPlainTextEdit(questions_text)
         self.layout.addWidget(self.questions)
@@ -75,6 +71,10 @@ class Demographics(QDialog):
     #;:---------------------------------------------------------
     # This class creates draws pie charts and bar charts to show
     # the distribution of the demographics of survey respondents
+    # the methods for this class are:
+    #   _init_
+    #   initUi
+    #   update
     #::---------------------------------------------------------
 
     def __init__(self):
@@ -89,6 +89,7 @@ class Demographics(QDialog):
 
         self.ax1.pie(race_percentages, labels=race_labels, autopct='%1.1f%%', startangle=90)
         self.ax1.axis('equal')
+        self.ax1.set_title('Race')
 
         self.figure.tight_layout()
         self.figure.canvas.draw_idle()
@@ -100,6 +101,7 @@ class Demographics(QDialog):
 
         self.ax2.pie(gender_percentages, labels=gender_labels, autopct='%1.1f%%', startangle=90)
         self.ax2.axis('equal')
+        self.ax2.set_title('Gender')
 
         self.figure2.tight_layout()
         self.figure2.canvas.draw_idle()
@@ -111,6 +113,7 @@ class Demographics(QDialog):
 
         self.ax3.pie(educ_percentages, labels=educ_labels, autopct='%1.1f%%', startangle=90)
         self.ax3.axis('equal')
+        self.ax3.set_title('Education')
 
         self.figure3.tight_layout()
         self.figure3.canvas.draw_idle()
@@ -121,6 +124,7 @@ class Demographics(QDialog):
         self.canvas4 = FigureCanvas(self.figure4)
 
         self.ax4.bar(income_labels, income_percentages, color=['tab:blue','tab:orange','tab:green','tab:red'])
+        self.ax4.set_title('Income')
 
         self.figure4.tight_layout()
         self.figure4.canvas.draw_idle()
@@ -131,16 +135,16 @@ class Demographics(QDialog):
         self.canvas5 = FigureCanvas(self.figure5)
 
         self.ax5.bar(age_labels, age_percentages, color=['tab:blue','tab:orange','tab:green','tab:red','tab:purple','tab:brown'])
+        self.ax5.set_title('Age Groups')
 
         self.figure5.tight_layout()
         self.figure5.canvas.draw_idle()
 
-
+        #Set layouts
         layout = QVBoxLayout()
         layout2 = QHBoxLayout()
         layout3 = QHBoxLayout()
 
-        # adding canvas to the layout
         layout2.addWidget(self.canvas)
         layout2.addWidget(self.canvas2)
         layout2.addWidget(self.canvas3)
@@ -162,7 +166,6 @@ class Distributions(QMainWindow):
     #   initUi
     #   update
     #::-------------------------------------------------------------
-    #send_fig = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -179,22 +182,32 @@ class Distributions(QMainWindow):
 
         self.layout = QVBoxLayout(self.main_widget)
 
+        #Questions option
         self.questionLabel = QLabel('Select a question')
+        self.questionLabel.setFixedHeight(20)
         self.questionDrop = QComboBox()
         self.questionDrop.addItems(questions_list)
+        self.questionDrop.setFixedHeight(20)
 
+        #Demographics option
         self.demoLabel = QLabel('Select a demographic')
+        self.demoLabel.setFixedHeight(20)
         self.demoDrop = QComboBox()
+        self.demoDrop.setFixedHeight(20)
         self.demoDrop.addItems(demographics_list)
 
+        #Plot button
         self.buttonPlot = QPushButton('Plot Distribution')
+        self.buttonPlot.setFixedHeight(20)
         self.buttonPlot.clicked.connect(self.update)
 
+        #Canvas for bar chart
         self.fig = Figure()
         self.ax = self.fig.add_subplot(111)
         self.axes = [self.ax]
         self.stackPlot = FigureCanvas(self.fig)
 
+        #Set layouts
         self.layout.addWidget(self.questionLabel)
         self.layout.addWidget(self.questionDrop)
         self.layout.addWidget(self.demoLabel)
@@ -209,12 +222,14 @@ class Distributions(QMainWindow):
     def update(self):
         self.ax.clear()
 
+        #set values and create subset to chart
         demo = str(self.questionDrop.currentText())
         quest = str(self.demoDrop.currentText())
         dfpivot = dfo[[demo,quest]]
 
+        #create pivot chart of selected data and plot
         pivot = dfpivot.pivot_table(index=quest, columns=demo, aggfunc=len, fill_value=0)
-        pivot.plot(kind='bar', stacked=True, rot=0 , ax=self.ax)
+        pivot.plot(kind='bar', stacked=True, rot=0 , ax=self.ax, ylabel='Response Count')
 
         self.fig.tight_layout()
         self.fig.canvas.draw_idle()
@@ -229,7 +244,6 @@ class RandomForest(QMainWindow):
     #   initUi
     #   update
     #::--------------------------------------------------
-    send_fig = pyqtSignal(str)
 
     def __init__(self):
         super(RandomForest, self).__init__()
@@ -241,22 +255,26 @@ class RandomForest(QMainWindow):
         self.setWindowTitle(self.Title)
         self.main_widget = QWidget(self)
 
+        #Set layouts
         self.layout = QVBoxLayout(self.main_widget)
-        self.SelectionBox = QHBoxLayout()  # sets horizontal layout for selection box
-        self.ModelBox1 = QHBoxLayout()  # sets horizontal layout for Results and Conf Matrix
-        self.ResultsLayout = QVBoxLayout()  # set vertical layout for Results and Accuracy score
-        self.ModelBox2 = QHBoxLayout()  # sets horizontal layout for Feature Importance and ROC
+        self.SelectionBox = QHBoxLayout()
+        self.ModelBox1 = QHBoxLayout()
+        self.ResultsLayout = QVBoxLayout()
+        self.ModelBox2 = QHBoxLayout()
 
+        #Test percent option
         self.labelPercentTest = QLabel('Percent to test:')
         self.boxPercentTest = QSpinBox(self)
         self.boxPercentTest.setRange(1, 99)
         self.boxPercentTest.setValue(25)
 
+        #Feature option
         self.labelFeature = QLabel('Number of Features:')
         self.boxFeature = QSpinBox(self)
         self.boxFeature.setRange(1, 92)
         self.boxFeature.setValue(25)
 
+        #Button to run model
         self.buttonRun = QPushButton("Run Model")
         self.buttonRun.clicked.connect(self.update)
 
@@ -266,9 +284,10 @@ class RandomForest(QMainWindow):
         self.SelectionBox.addWidget(self.boxFeature)
         self.SelectionBox.addWidget(self.buttonRun)
 
-
+        #Classification report, accuracy score, roc score
         self.boxResults = QLabel('Classification Report:')
         self.Results = QPlainTextEdit()
+        self.Results.setFixedWidth(325)
         self.Accuracy = QLabel('Accuracy Score:')
         self.ROC = QLabel('ROC Score:')
 
@@ -279,15 +298,15 @@ class RandomForest(QMainWindow):
 
         self.ModelBox1.addLayout(self.ResultsLayout)
 
+        #Confusion matrix plot
         self.fig1 = Figure()
         self.ax1 = self.fig1.add_subplot(111)
         self.axes1 = [self.ax1]
         self.canvasCFM = FigureCanvas(self.fig1)
 
-        self.ModelBox1.addWidget(self.canvasCFM)
+        self.ModelBox2.addWidget(self.canvasCFM)
 
-        self.boxFeatImportance = QLabel('Feature Importance Graph')
-
+        #ROC plot
         self.fig2 = Figure()
         self.ax2 = self.fig2.add_subplot(111)
         self.axes2 = [self.ax2]
@@ -295,12 +314,13 @@ class RandomForest(QMainWindow):
 
         self.ModelBox2.addWidget(self.canvasROC)
 
+        #Feature Importance plot
         self.fig3 = Figure()
         self.ax3 = self.fig3.add_subplot(111)
         self.axes3 = [self.ax3]
         self.canvasFI = FigureCanvas(self.fig3)
 
-        self.ModelBox2.addWidget(self.canvasFI)
+        self.ModelBox1.addWidget(self.canvasFI)
 
 
         self.layout.addLayout(self.SelectionBox)
@@ -393,6 +413,8 @@ class RandomForest(QMainWindow):
 
         self.ax1.set_xlabel('Predicted')
         self.ax1.set_ylabel('Actual')
+        self.ax1.set_yticks((0, 1))
+        self.ax1.set_xticks((0, 1))
         self.ax1.set_yticklabels(class_names)
         self.ax1.set_xticklabels(class_names)
         self.ax1.set_title('Confusion Matrix')
@@ -406,28 +428,26 @@ class RandomForest(QMainWindow):
         self.fig1.canvas.draw_idle()
 
         # Output: ROC Curve
-        #self.ax2.plot_roc_curve(rf, X_test, y_test)
-
         fpr, tpr, threholds = roc_curve(y_test.values, y_pred_proba[:, 1], pos_label=2)
         self.ax2.plot(fpr,tpr)
         self.ax2.set_title("ROC Curve")
         self.ax2.set_xlabel('False Positive Rate')
         self.ax2.set_ylabel('True Positive Rate')
-        self.ax2.legend(loc="lower right")
 
         self.fig2.tight_layout()
         self.fig2.canvas.draw_idle()
 
         # Output: ROC score
-        self.auc_score_value = 'ROC Score: ' + str(roc_auc_score(y_test, y_pred_proba[:, 1])*100)
-        self.ROC.setText(self.auc_score_value)
+        self.roc_score_value = 'ROC Score: ' + str(roc_auc_score(y_test, y_pred_proba[:, 1])*100)
+        self.ROC.setText(self.roc_score_value)
 
 
         # Output Feature importance
         imp_final = rf.feature_importances_
         feat_imp_final = pd.Series(imp_final, X_train.columns)
-        feat_imp_final.sort_values(ascending=False, inplace=True)
+        feat_imp_final.sort_values(ascending=True, inplace=True)
         self.ax3.barh(feat_imp_final.index,feat_imp_final.values)
+        self.ax3.set_yticks(np.arange(len(feat_imp_final.index)))
         self.ax3.set_yticklabels(feat_imp_final.index)
         self.ax3.set_aspect('auto')
         self.ax3.set_title('Feature Importance')
@@ -449,7 +469,6 @@ class App(QMainWindow):
         self.height = 800
 
         #:: Title for the application
-
         self.setWindowIcon(QIcon('Code//Icons//exit.png')) #Icon made by Pixel perfect from www.flaticon.com
         self.Title = 'Voter Turnout Survey'
 
@@ -486,7 +505,7 @@ class App(QMainWindow):
 
         #::--------------------------------------
         # EDA action
-        # Create Survey, Demographics, Distributions options with icons
+        # Create Survey, Demographics, Distributions options
         # Text tips for each option
         #::--------------------------------------
         questionsButton = QAction(QIcon('question.png'),'Survey', self)
@@ -506,7 +525,7 @@ class App(QMainWindow):
 
         #::--------------------------------------
         # Model Action
-        # Create Random Forest option with icon
+        # Create Random Forest option
         # Random forest text tip
         #::--------------------------------------
 
@@ -787,13 +806,7 @@ def voter_turnout():
     # Drop unsure (value of 3) and refused to answer (value of -1) to set up our two-way classification
     df_mod = df[(df['q23_which_candidate_supporting'] == 1) | (df['q23_which_candidate_supporting'] == 2)]
 
-
-
-
-
 if __name__ == '__main__':
+    #run voter_turnout to read in data before running GUI app
     voter_turnout()
     main()
-
-
-

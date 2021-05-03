@@ -47,10 +47,7 @@ class Survey(QMainWindow):
 
         self.layout = QVBoxLayout(self.main_widget) #set vertical layout
 
-        self.questions = QLabel('1 - Are you a US Citizen? 1.Yes/2.No'
-                               '\n2 - In your view, how important are each of the following to being a good American?'
-                               '\n -Voting in elections 1=Very Important/2=Somewhat Import/3=Not so important/4=Not at all important')
-                                #set text for questions widget
+        self.questions = QPlainTextEdit(questions_text)
         self.layout.addWidget(self.questions)
 
         self.setCentralWidget(self.main_widget)
@@ -545,7 +542,7 @@ def voter_turnout():
     global df_mod
     global demographics_data
     global demographics_list
-    global questions
+    global questions_text
     global questions_list
     global race_percentages
     global race_labels
@@ -572,17 +569,7 @@ def voter_turnout():
 
     ##### Exploratory data analysis ##### ---------------------------------------------------------------------------------
 
-    print(df.head)
     initial_cols = df.columns
-    print([x for x in df.columns])
-
-    print(df['Q1'].value_counts())
-    print(df['ppage'].value_counts())
-    print(df['educ'].value_counts())
-    print(df['race'].value_counts())
-    print(df['gender'].value_counts())
-    print(df['income_cat'].value_counts())
-    print(df['voter_category'].value_counts())
 
     #### Data Pre-Processing to prepare for modeling ##### -----------------------------------------------------------------
 
@@ -721,9 +708,6 @@ def voter_turnout():
     for x in replace_neg_one:
         df[x] = df[x].fillna(df.groupby(by=['Education', 'Race', 'Gender', 'Income'])[x].transform('mean'))
 
-    # Identify values of the target variable
-    print(df['q23_which_candidate_supporting'].value_counts())
-
     total_age = df['Age_Group'].count()
     twenties = df[df['Age_Group'] == 'twenties']['Age_Group'].count() / total_age
     thirties = df[df['Age_Group'] == 'thirties']['Age_Group'].count() / total_age
@@ -777,6 +761,7 @@ def voter_turnout():
     # Set questions variable
     questions = df.iloc[:,0:87]
     questions_list = list(questions.columns)
+    questions_text = '\n'.join(map(str, questions_list))
 
     le = LabelEncoder()
     df['Education'] = le.fit_transform(df['Education'])

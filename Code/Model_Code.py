@@ -288,7 +288,7 @@ educ_labels = ['Less than $40k', '$40-75k', '$75-125k', '$125k or more']
 income_pie, ax1 = plt.subplots()
 ax1.pie(educ_percentages, labels=educ_labels, autopct='%1.1f%%', startangle=90)
 ax1.axis('equal')
-plt.title(label = 'Percentage of Non-Voters by Education-Level')
+plt.title(label = 'Percentage of Non-Voters by Income Category')
 plt.show()
 
 sns.catplot(x='income_cat', kind='count', palette = "ch:.25", data = df)
@@ -462,7 +462,7 @@ gb_score = gb_clf.predict_proba(X_test)
 # More area under the curve indicates the model has skill in finding true positives and avoiding false positives
 plot_roc_curve(gb_clf, X_test, y_test)
 plt.savefig('roc_curve_GB_full_model.png', dpi=300, bbox_inches='tight')
-plt.title(label='ROC Gradient Boost Classifier - All Features')
+plt.title(label='ROC Gradient Boosting Classifier - All Features')
 plt.show()
 
 # Calculate metrics for boosting model
@@ -491,7 +491,7 @@ gb2_score = gb2_clf.predict_proba(X_slim_test)
 # More area under the curve indicates the model has skill in finding true positives and avoiding false positives
 plot_roc_curve(gb2_clf, X_slim_test, y_slim_test)
 plt.savefig('roc_curve_GB_slim_model.png', dpi=300, bbox_inches='tight')
-plt.title(label='ROC Gradient Boost Classifier - Slim Features')
+plt.title(label='ROC Gradient Boosting Classifier - Slim Features')
 plt.show()
 
 # Calculate metrics for boosting model

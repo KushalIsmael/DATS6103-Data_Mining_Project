@@ -1,7 +1,7 @@
 # DATS 6103 Final Project: Group6
 
 ## Summary
-This repository contains [Bradley Reardon](https://github.com/breardon7), [Divya Parmar](https://github.com/dparmar16/), and [Kushal Ismael](https://github.com/KushalIsmael/);s final project for George Washington University's DATS 6103:Data Mining course.
+This repository contains [Bradley Reardon](https://github.com/breardon7), [Divya Parmar](https://github.com/dparmar16/), and [Kushal Ismael](https://github.com/KushalIsmael/)'s final project for George Washington University's DATS 6103:Data Mining course.
 Our project objective was to apply what we learned in our course to a real world problem. For our project we applied preprocessing techniques and machine learning models to survey data from FiveThirtyEight and Ipsos on American voting behavior.
 
 ## Data

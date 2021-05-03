@@ -12,3 +12,5 @@ Our project objective was to apply what we learned in our course to a real world
 * Graphs contains graphs that were generated in Model_Code.py
 * Group-Proposal contains the proposal that we submitted before starting the project.
 * Final-Group-Presentation-Zipped contains a PowerPoint presentation of our project.
+* Final-Group-Project-Report contains a report of our findings from this project.
+* Each group member has added an indidual folder with their name to show their individual contributions to the final project.

@@ -188,9 +188,12 @@ class Distributions(QMainWindow):
         self.demoDrop.addItems(demographics_list)
 
         self.buttonPlot = QPushButton('Plot Distribution')
-        #self.buttonPlot.clicked.connect(self.update)
+        self.buttonPlot.clicked.connect(self.update)
 
-        self.stackPlot = QLabel('Stacked bar chart of plot')
+        self.fig = Figure()
+        self.ax = self.fig.add_subplot(111)
+        self.axes = [self.ax]
+        self.stackPlot = FigureCanvas(self.fig)
 
         self.layout.addWidget(self.questionLabel)
         self.layout.addWidget(self.questionDrop)
@@ -202,6 +205,19 @@ class Distributions(QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.resize(1000, 800)
         self.show()
+
+    def update(self):
+        self.ax.clear()
+
+        demo = str(self.questionDrop.currentText())
+        quest = str(self.demoDrop.currentText())
+        dfpivot = dfo[[demo,quest]]
+
+        pivot = dfpivot.pivot_table(index=quest, columns=demo, aggfunc=len, fill_value=0)
+        pivot.plot(kind='bar', stacked=True, rot=0 , ax=self.ax)
+
+        self.fig.tight_layout()
+        self.fig.canvas.draw_idle()
 
 class RandomForest(QMainWindow):
 
@@ -461,7 +477,7 @@ class App(QMainWindow):
         # Exit text tip
         #::--------------------------------------
 
-        exitButton = QAction(QIcon(str(dir) + '\\' +'exit.png'), '&Exit', self)
+        exitButton = QAction(QIcon('exit.png'), '&Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)
@@ -483,7 +499,7 @@ class App(QMainWindow):
         demographicsButton.triggered.connect(self.edaDemographics)
         edaMenu.addAction(demographicsButton)
 
-        distributionButton = QAction(QIcon('bar-chart.png'),'Distribution Charts', self)
+        distributionButton = QAction(QIcon('insight.png'),'Distribution Charts', self)
         distributionButton.setStatusTip('Bar charts of demographics by question')
         distributionButton.triggered.connect(self.edaDistributions)
         edaMenu.addAction(distributionButton)
@@ -538,7 +554,7 @@ def main():
 def voter_turnout():
     # read in data and set global variables to be used in models and graphs
 
-    global df
+    global dfo
     global df_mod
     global demographics_data
     global demographics_list
@@ -560,12 +576,6 @@ def voter_turnout():
 
     # If having issues loading in, then run this:
     # df = pd.read_csv('nonvoters_data.csv')
-
-    # Change directory for graphing purposes
-    graphing_dir = os.path.join(dir, 'Graphs')
-    if not os.path.exists(graphing_dir):
-        os.mkdir(graphing_dir)
-    os.chdir(graphing_dir)
 
     ##### Exploratory data analysis ##### ---------------------------------------------------------------------------------
 
@@ -698,6 +708,8 @@ def voter_turnout():
     age_labels_cut = ['twenties', 'thirties', 'forties', 'fifties', 'sixties', 'seventies +']
     age_bins = [20, 30, 40, 50, 60, 70, 200]
     df['Age_Group'] = pd.cut(df['Age'], bins=age_bins, labels=age_labels_cut, right=False)
+
+    dfo = df.copy()
 
     # Step 2 - Replace -1 or -1.0 values with NaN
     # Values might be stored as int or float, so account for both

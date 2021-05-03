@@ -35,6 +35,7 @@ class Survey(QMainWindow):
         super(Survey, self).__init__()
 
         self.Title = "Survey Questions"
+        self.setWindowIcon(QIcon('Icons//question.png'))
         self.initUi()
 
     def initUi(self):
@@ -80,6 +81,7 @@ class Demographics(QDialog):
     def __init__(self):
         super(Demographics, self).__init__()
         self.Title = "Demographics of Survey Respondents"
+        self.setWindowIcon(QIcon('Icons//pie-chart.png'))
         self.setWindowTitle(self.Title)
 
         # Race pie
@@ -174,6 +176,7 @@ class Distributions(QMainWindow):
         super(Distributions, self).__init__()
 
         self.Title = "Distribution of Demographic for Questions"
+        self.setWindowIcon(QIcon('Icons//insight.png'))
         self.initUi()
 
     def initUi(self):
@@ -248,6 +251,7 @@ class RandomForest(QMainWindow):
     def __init__(self):
         super(RandomForest, self).__init__()
         self.Title = "Random Forest Model"
+        self.setWindowIcon(QIcon('Icons//forest.png'))
 
         self.initUi()
 
@@ -469,7 +473,7 @@ class App(QMainWindow):
         self.height = 800
 
         #:: Title for the application
-        self.setWindowIcon(QIcon('Code//Icons//exit.png')) #Icon made by Pixel perfect from www.flaticon.com
+        self.setWindowIcon(QIcon('Icons//vote.png')) #Icon made by Pixel perfect from www.flaticon.com
         self.Title = 'Voter Turnout Survey'
 
         self.initUI()
@@ -496,7 +500,7 @@ class App(QMainWindow):
         # Exit text tip
         #::--------------------------------------
 
-        exitButton = QAction(QIcon('exit.png'), '&Exit', self)
+        exitButton = QAction(QIcon('Icons//exit.png'), '&Exit', self)
         exitButton.setShortcut('Ctrl+Q')
         exitButton.setStatusTip('Exit application')
         exitButton.triggered.connect(self.close)
@@ -508,17 +512,17 @@ class App(QMainWindow):
         # Create Survey, Demographics, Distributions options
         # Text tips for each option
         #::--------------------------------------
-        questionsButton = QAction(QIcon('question.png'),'Survey', self)
+        questionsButton = QAction(QIcon('Icons//question.png'),'Survey', self)
         questionsButton.setStatusTip('Questions in survey')
         questionsButton.triggered.connect(self.edaSurvey)
         edaMenu.addAction(questionsButton)
 
-        demographicsButton = QAction(QIcon('pie-chart.png'),'Demographics', self)
+        demographicsButton = QAction(QIcon('Icons//pie-chart.png'),'Demographics', self)
         demographicsButton.setStatusTip('Graphs of demographics in survey')
         demographicsButton.triggered.connect(self.edaDemographics)
         edaMenu.addAction(demographicsButton)
 
-        distributionButton = QAction(QIcon('insight.png'),'Distribution Charts', self)
+        distributionButton = QAction(QIcon('Icons//insight.png'),'Distribution Charts', self)
         distributionButton.setStatusTip('Bar charts of demographics by question')
         distributionButton.triggered.connect(self.edaDistributions)
         edaMenu.addAction(distributionButton)
@@ -529,7 +533,7 @@ class App(QMainWindow):
         # Random forest text tip
         #::--------------------------------------
 
-        randomforestButton = QAction(QIcon('forest.png'),'Random Forest', self)
+        randomforestButton = QAction(QIcon('Icons//forest.png'),'Random Forest', self)
         randomforestButton.setStatusTip('Run a random forest model on the data')
         randomforestButton.triggered.connect(self.modelRF)
         modelMenu.addAction(randomforestButton)
@@ -590,11 +594,7 @@ def voter_turnout():
     global age_labels
     global age_percentages
 
-    dir = str(Path(os.getcwd()).parents[0])
-    df = pd.read_csv(dir + '\\' + 'nonvoters_data.csv', sep=',', header=0)
-
-    # If having issues loading in, then run this:
-    # df = pd.read_csv('nonvoters_data.csv')
+    df = pd.read_csv('nonvoters_data.csv')
 
     ##### Exploratory data analysis ##### ---------------------------------------------------------------------------------
 

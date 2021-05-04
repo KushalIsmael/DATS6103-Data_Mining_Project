@@ -1,5 +1,8 @@
 # DATS_6103_Group_Project
 
+## Data
+[Data Source](https://github.com/fivethirtyeight/data/tree/master/non-voters)
+
 ## Order to run code:
 1. Model_Code.py
 2. GUI_Code.py

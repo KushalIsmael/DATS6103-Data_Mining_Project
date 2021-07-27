@@ -7,7 +7,8 @@ Our project objective was to apply what we learned in our course to a real world
 We cleaned the data for this project and analyzed decision tree, random forest, and gradient boosting models of the data in Python. We created a GUI using PyQT for users to interact with the data and experiment with models.
 
 ## Data
-[Data Source](https://github.com/fivethirtyeight/data/tree/master/non-voters)
+- Five Thirty Eight
+  - [Non-Voter Survey](https://github.com/fivethirtyeight/data/tree/master/non-voters)
 
 ## Folders
 * Code contains all of our code and data used in the project.
